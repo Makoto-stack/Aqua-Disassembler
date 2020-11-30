@@ -114,7 +114,6 @@ inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_
     END    START
 
 
-
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
