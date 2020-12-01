@@ -1,0 +1,81 @@
+00005000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 11/27/2020 6:56:40 PM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : Test Program
+00000000                             3  * Written by : Ira Yago, Makaoto Booth, Jamie Kim
+00000000                             4  * Date       : 11/11/20
+00000000                             5  * Description: Testing program for disassembler
+00000000                             6  *-----------------------------------------------------------
+00005000                             7      ORG    $5000
+00005000                             8  START:      
+00005000  4E71                       9          NOP
+00005002                            10  
+00005002  7001                      11          MOVE.L  #1,D0
+00005004  720B                      12          MOVE.L  #11,D1
+00005006  B200                      13  LOOP1   CMP.B   D0,D1      *For loop that loops 10 times
+00005008  6700 0008                 14          BEQ     LOOP1END
+0000500C  5282                      15          ADD.L   #1,D2      *Add 1 to D2
+0000500E  5280                      16          ADDQ.L  #1,D0
+00005010  60F4                      17          BRA     LOOP1
+00005012                            18          
+00005012                            19  LOOP1END
+00005012  41F8 6000                 20          LEA     $6000,A0     *Load addr $6000 at A0
+00005016  D0FC 0500                 21          ADDA.W  #$500,A0     *Change addr of A0 to $6500
+0000501A  2248                      22          MOVEA.L A0,A1        *Copy A0 to A1
+0000501C  7000                      23          MOVEQ.L #0,D0        *Clear D0
+0000501E  7200                      24          MOVEQ.L #0,D1        *Clear D1
+00005020  2602                      25          MOVE.L  D2,D3        *Copy D2 to D3
+00005022                            26          
+00005022  2E49                      27          MOVEA.L A1,SP        *Load A1 into stack pointer
+00005024  4EB9 00005042             28          JSR     do_test
+0000502A                            29          
+0000502A  21C2 6500                 30          MOVE.L  D2,($6500)   *Copy D2 into $6500
+0000502E  23C2 22226500             31          MOVE.L  D2,($22226500) *Copy D2 into $22226500
+00005034                            32          
+00005034  2204                      33          MOVE.L  D4,D1        *Display value in D4
+00005036  103C 0003                 34          MOVE.B  #3,D0    
+0000503A  4E4F                      35          TRAP    #15
+0000503C                            36          
+0000503C  4EF9 00005052             37          JMP     continue         
+00005042  48E7 2080                 38  do_test MOVEM.L A0/D2,-(SP)
+00005046  7605                      39          MOVE.L  #5,D3
+00005048  9483                      40          SUB.L   D3,D2
+0000504A  2802                      41          MOVE.L  D2,D4        
+0000504C  4CDF 0104                 42          MOVEM.L (SP)+,A0/D2
+00005050  4E75                      43  exit    RTS
+00005052                            44  
+00005052                            45  continue
+00005052  E94A                      46          LSL     #4,D2       *Shift left a total of 3 hex digits
+00005054  E942                      47          ASL     #4,D2
+00005056  E95A                      48          ROL     #4,D2
+00005058                            49          
+00005058  E84A                      50          LSR     #4,D2       *Shift right a total of 3 hex digits
+0000505A  E842                      51          ASR     #4,D2
+0000505C  E85A                      52          ROR     #4,D2        
+0000505E                            53          
+0000505E  243C 000000BD             54          MOVE.L  #%10111101,D2
+00005064  263C 000000C3             55          MOVE.L  #%11000011,D3
+0000506A  783C                      56          MOVE.L  #%00111100,D4
+0000506C  4602                      57          NOT.B   D2
+0000506E  C443                      58          AND.W   D3,D2
+00005070  8444                      59          OR.W    D4,D2
+00005072                            60  
+00005072                            61  * Put variables and constants here
+00005072                            62  
+00005072                            63      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+CONTINUE            5052
+DO_TEST             5042
+EXIT                5050
+LOOP1               5006
+LOOP1END            5012
+START               5000
