@@ -6,6 +6,23 @@
 *-----------------------------------------------------------
     ORG    $1000
 START:
+
+intro
+    LEA introMsg, A1
+    MOVE.B  #13, D0
+    TRAP    #15
+
+disassemble_option
+    LEA introOptionMsg, A1
+    MOVE.B  #13, D0
+    TRAP    #15
+    MOVE.B  #5, D0
+    TRAP    #15
+    CMP.B   #$79, D1
+    BNE done
+    LEA newLine, A1
+    MOVE.B  #13, D0
+    TRAP    #15
     
 *subroutine to get and save starting location
 get_start_loc
@@ -79,13 +96,11 @@ start_or_end
 *error message for start
 invalid_start
     BSR disp_error_message
-    *JSR clear_registers
     BRA get_start_loc
 
 *error message for end
 invalid_end
     BSR disp_error_message
-    *JSR clear_registers
     BRA get_end_loc
 
 *error message dispay
@@ -107,9 +122,14 @@ start_loc   DS.L    1
 end_loc     DS.L    1
 
 *I/O messages
+introMsg   DC.B    'Welcome to the Motorola 68k disassembler!',CR,0
+introOptionMsg  DC.B    'Type "y" to initiate disassembly, any other character to exit',CR,0
 promptStart DC.B    'Enter a starting address (8 hex digits):',CR,0
 promptEnd   DC.B    'Enter an ending address (8 hex digits):',CR,0
 inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_addr, last bit even',CR,0
+
+*formatting
+newLine DC.B    '',CR,0
 
     END    START
 
