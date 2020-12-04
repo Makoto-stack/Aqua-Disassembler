@@ -141,30 +141,71 @@ print_memory_location
     LSR.L   #8, D0
     LSR.L   #8, D0
     MOVE.W  D0, curr_word
-    MOVE.W  curr_word, D3
-    JSR hex_to_ascii
+    JSR print_word_of_memloc
     MOVE.L  curr_loc, D0
-    MOVE.W  D0, D3
+    MOVE.W  D0, curr_word
+    JSR print_word_of_memloc
+    JSR print_space
+    RTS
+    
+print_word_of_memloc
+    JSR isolate_first_nibble
     JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR isolate_second_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR isolate_third_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR isolate_fourth_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+    
+isolate_first_nibble
+    MOVE.W  curr_word, D1
+    LSR.W   #8, D1
+    LSR.W   #4, D1
+    ANDI.W  #$000F, D1
+    MOVE.B  D1, curr_nibble
     RTS
 
-hex_to_ascii
-    
+isolate_second_nibble
+    MOVE.W  curr_word, D1
+    LSR.W   #8, D1
+    ANDI.W  #$000F, D1
+    MOVE.B  D1, curr_nibble
+    RTS
+
+isolate_third_nibble
+    MOVE.W  curr_word, D1
+    LSR.W   #4, D1
+    ANDI.W  #$000F, D1
+    MOVE.B  D1, curr_nibble
+    RTS
+
+isolate_fourth_nibble
+    MOVE.W  curr_word, D1
+    ANDI.W  #$000F, D1
+    MOVE.B  D1, curr_nibble
+    RTS
     
 *subroutine for hex to ascii
-hex_to_ascii_sr
-    CMPI.B  #$9,D3
+hex_to_ascii
+    CMPI.B  #$9,D1
     BGT     letter_to_ascii
 num_to_ascii
-    ADDI.B   #$30,D3
+    ADDI.B   #$30,D1
     RTS
 letter_to_ascii
-    ADDI.B   #$37,D3
+    ADDI.B   #$37,D1
     RTS
 
 *subroutine for trap task 14    
-print_string_at_A1
-    MOVE.B      #14,D0
+print_char_of_D1
+    CLR.L   D0
+    MOVE.B      #6,D0
     TRAP        #15
     RTS
     
@@ -196,6 +237,13 @@ clr_all_regs
     JSR clr_addr_regs
     JSR clr_data_regs
     RTS
+
+*subroutine to print a space    
+print_space
+    LEA printSpace, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
     
 done
     SIMHALT
@@ -210,6 +258,7 @@ start_loc   DS.L    1
 end_loc     DS.L    1
 curr_loc    DS.L    1
 curr_word   DS.W    1
+curr_nibble DS.B    1
 
 *I/O messages
 introMsg   DC.B    'Welcome to the Motorola 68k disassembler!',CR,0
@@ -220,6 +269,7 @@ inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_
 
 *formatting
 newLine DC.B    '',CR,0 use with trap task 13
+printSpace  DC.B    ' ',CR,0 use with trap task 14
 
     END    START
 
