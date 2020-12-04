@@ -127,6 +127,8 @@ CODE1011
 
 *AND,MUL
 CODE1100
+*need to check when we multiply bits by six...
+
 
 *ADD,ADDA,ADDX
 CODE1101
@@ -143,6 +145,26 @@ CODE1111
 
 
 *****BUFFER*****
+
+*****PRINT BAD DATA TO CONSOLE*****
+*address
+   MOVE.B. #0,D4
+   LEA 
+*data
+PRINT_BAD_DATA
+   MOVE.B  #$42,(A2)    *B
+   MOVE.B  #$41,(A2)    *A
+   MOVE.B  #$44,(A2)    *D
+   MOVE.B  #' ',(A2)
+   MOVE.B  #$44,(A2)    *D
+   MOVE.B  #$41,(A2)    *A
+   MOVE.B  #$54,(A2)    *T
+   MOVE.B  #$41,(A2)    *A
+   MOVE.B  #' ',(A2)
+   MOVE.B  #$24,(A2)    *$
+
+*word
+
 
 
 * Put variables and constants here
