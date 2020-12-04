@@ -7,10 +7,17 @@
     ORG    $1000
 START:
 
+***
+*this whole section is dedicated to I/O
+*prints intro, asks user if they want to disassemble (loop)
+*obtains start and end addresses, stores in memory
+***
+
 intro
     LEA introMsg, A1
     MOVE.B  #13, D0
     TRAP    #15
+    BRA get_start_loc
 
 disassemble_option
     LEA introOptionMsg, A1
@@ -39,6 +46,7 @@ get_start_loc
     BTST    #0, D2  check last bit
     BNE invalid_start
     MOVE.L  D2, start_loc   save value
+    MOVE.L  D2, curr_loc    current location is start
 
 *subroutine to get and save ending location
 get_end_loc    
@@ -58,7 +66,8 @@ get_end_loc
     CMP.L   start_loc, D2  make sure start < end
     BLE invalid_end
     MOVE.L  D2, end_loc save value
-    JMP done    end I/O for now (will change later)
+    JSR clr_all_regs
+    JMP read_memory begin reading memory
 
 *ascii to hex subroutine
 ascii_to_hex
@@ -109,8 +118,87 @@ disp_error_message
     MOVE.B  #13, D0
     TRAP    #15
     RTS
+
+***
+*the following section is where memory reading begins
+***
+
+*print address location
+*obtain word of memory
+*jump to table based on first nibble
+read_memory
+    JSR print_memory_location
+    JMP done
+
+*check if page needs to be advanced (30 lines)
+advance_page
+
+*check if ending address has been parsed
+finish_disassembly
+
+print_memory_location
+    MOVE.L  curr_loc, D0    *load current address
+    LSR.L   #8, D0
+    LSR.L   #8, D0
+    MOVE.W  D0, curr_word
+    MOVE.W  curr_word, D3
+    JSR hex_to_ascii
+    MOVE.L  curr_loc, D0
+    MOVE.W  D0, D3
+    JSR hex_to_ascii
+    RTS
+
+hex_to_ascii
+    
+    
+*subroutine for hex to ascii
+hex_to_ascii_sr
+    CMPI.B  #$9,D3
+    BGT     letter_to_ascii
+num_to_ascii
+    ADDI.B   #$30,D3
+    RTS
+letter_to_ascii
+    ADDI.B   #$37,D3
+    RTS
+
+*subroutine for trap task 14    
+print_string_at_A1
+    MOVE.B      #14,D0
+    TRAP        #15
+    RTS
+    
+*clear address registers
+clr_addr_regs
+    MOVE.L  #0,A0
+    MOVE.L  #0,A1
+    MOVE.L  #0,A2
+    MOVE.L  #0,A3
+    MOVE.L  #0,A4
+    MOVE.L  #0,A5
+    MOVE.L  #0,A6
+    RTS
+
+*clear data registers
+clr_data_regs
+    CLR.L   D0
+    CLR.L   D1
+    CLR.L   D2
+    CLR.L   D3
+    CLR.L   D4
+    CLR.L   D5
+    CLR.L   D6
+    CLR.L   D7
+    RTS
+    
+*clear all registers
+clr_all_regs
+    JSR clr_addr_regs
+    JSR clr_data_regs
+    RTS
     
 done
+    SIMHALT
 
 *CR, LF, user input
 CR  EQU $0D
@@ -120,6 +208,8 @@ input   EQU $500
 *data and address storage
 start_loc   DS.L    1
 end_loc     DS.L    1
+curr_loc    DS.L    1
+curr_word   DS.W    1
 
 *I/O messages
 introMsg   DC.B    'Welcome to the Motorola 68k disassembler!',CR,0
@@ -129,7 +219,7 @@ promptEnd   DC.B    'Enter an ending address (8 hex digits):',CR,0
 inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_addr, last bit even',CR,0
 
 *formatting
-newLine DC.B    '',CR,0
+newLine DC.B    '',CR,0 use with trap task 13
 
     END    START
 
