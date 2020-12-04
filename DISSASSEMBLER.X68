@@ -7,6 +7,18 @@
     ORG    $1000
 START:                  ; first instruction of program
 
+*****DECODE*****
+DECODE
+   CLR D2
+   CLR D3
+   MOVE.W (A3),D2       *get the address over to D2
+   MOVE.W D2,D3         *copy it over to make changes
+   LSR    #8,D3         *get the first four bits
+   LSR    #4,D3
+   MULU   #6,D3
+   LEA    OPCODE_TABLE,A5  *load the index to the opcode table
+   JSR    0(A5,D3)         *indirect jump using the index in the opcode table
+   RTS
 
 *****JUMP TABLE*****
 *LOOK AT FIRST FOUR BITS AND DETERMINE WHICH OPCODE TO USE
