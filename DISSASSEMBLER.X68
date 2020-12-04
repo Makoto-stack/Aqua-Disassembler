@@ -58,6 +58,23 @@ CODE0001
 
 *MOVE.L,MOVEA.L
 CODE0010
+   *check whether if it is MOVE.L or MOVEA.L
+MOVE_L
+   MOVE.B  #$4D,(A2)+  *M
+   MOVE.B  #$4F,(A2)+  *O
+   MOVE.B  #$56,(A2)+  *V
+   MOVE.B  #$56,(A2)+  *E
+   MOVE.B  #$2E,(A2)+  *.
+   MOVE.B  #$4C,(A2)+  *L
+MOVEA_L
+   MOVE.B  #$4D,(A2)+  *M
+   MOVE.B  #$4F,(A2)+  *O
+   MOVE.B  #$56,(A2)+  *V
+   MOVE.B  #$56,(A2)+  *E
+   MOVE.B  #$41,(A2)+  *A
+   MOVE.B  #$2E,(A2)+  *.
+   MOVE.B  #$4C,(A2)+  *L
+
 
 *MOVE.W,MOVEA.W
 CODE0011
