@@ -9,6 +9,7 @@ START:                  ; first instruction of program
 
 
 *****JUMP TABLE*****
+*LOOK AT FIRST FOUR BITS AND DETERMINE WHICH OPCODE TO USE
 OPCODE_TABLE
    JMP CODE0000
    JMP CODE0001
