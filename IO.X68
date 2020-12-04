@@ -128,6 +128,14 @@ disp_error_message
 *jump to table based on first nibble
 read_memory
     JSR print_memory_location
+    MOVE.L  curr_loc, A0
+    MOVE.W  (A0), curr_four_nibbles
+    MOVE.W  curr_four_nibbles, D0
+    LSR.L   #8, D0
+    LSR.L   #4, D0
+    MULU    #6, D0
+    LEA FIRST_NIBBLE_TABLE, A1
+    JSR 0(A1, D0)
     JMP done
 
 *check if page needs to be advanced (30 lines)
@@ -136,6 +144,125 @@ advance_page
 *check if ending address has been parsed
 finish_disassembly
 
+***
+*end of memory reading section
+***
+
+***
+*beginning of parsing opword subroutines
+***
+
+*****JUMP TABLE*****
+*LOOK AT FIRST FOUR BITS AND DETERMINE WHICH OPCODE TO USE
+FIRST_NIBBLE_TABLE
+   JMP CODE0000 not supported
+   JMP CODE0001 MOVE.B
+   JMP CODE0010 MOVE.L, MOVEA.L
+   JMP CODE0011 MOVE.W, MOVEA.W
+   JMP CODE0100 NOP, JSR, LEA, MOVEM, NOT, RTS
+   JMP CODE0101 ADDQ
+   JMP CODE0110 BRA, BGT, BLE, BEQ
+   JMP CODE0111 MOVEQ
+   JMP CODE1000 OR
+   JMP CODE1001 SUB
+   JMP CODE1010 not supported
+   JMP CODE1011 not supported
+   JMP CODE1100 AND
+   JMP CODE1101 ADD, ADDA
+   JMP CODE1110 LSR, LSL, ASR, ASL, ROR, ROL
+   JMP CODE1111 not supported
+   RTS
+   
+
+*not supported
+CODE0000
+
+
+*MOVE.B
+CODE0001
+
+
+*MOVE.L, MOVEA.L
+CODE0010
+
+
+*MOVE.W, MOVEA.W
+CODE0011
+
+
+*NOP, JSR, LEA, MOVEM, NOT, RTS
+CODE0100
+NOP_check
+    MOVE.W  curr_four_nibbles, D1
+    CMP.W   #$4E71, D1
+    BNE RTS_check
+    MOVE.B  #14, D0
+    LEA printNOP, A1
+    TRAP    #15
+    RTS
+RTS_check
+    MOVE.W  curr_four_nibbles, D1
+    CMP.W   #$4E75, D1
+    BNE done
+    MOVE.B  #14, D0
+    LEA printRTS, A1
+    TRAP    #15
+    RTS
+
+*ADDQ
+CODE0101
+
+
+*BRA, BGT, BLE, BEQ
+CODE0110
+
+
+*MOVEQ
+CODE0111
+
+
+*OR
+CODE1000
+
+
+*SUB
+CODE1001
+
+
+*not supported
+CODE1010
+
+
+*not supported
+CODE1011
+
+
+*AND
+CODE1100
+
+
+*ADD, ADDA
+CODE1101
+
+
+*LSR, LSL, ASR, ASL, ROR, ROL
+CODE1110
+
+
+*not supported
+CODE1111
+
+
+
+*put any needed subroutines/jump tables for size, register, EA mode below here
+
+
+*put any needed printing subroutines below here
+
+
+***
+*beginning of print memory specific subroutines
+***
 print_memory_location
     MOVE.L  curr_loc, D0    *load current address
     LSR.L   #8, D0
@@ -163,32 +290,29 @@ print_word_of_memloc
     JSR print_char_of_D1
     RTS
     
+*isolate subroutines are for printing memory location
 isolate_first_nibble
     MOVE.W  curr_word, D1
     LSR.W   #8, D1
     LSR.W   #4, D1
     ANDI.W  #$000F, D1
-    MOVE.B  D1, curr_nibble
     RTS
 
 isolate_second_nibble
     MOVE.W  curr_word, D1
     LSR.W   #8, D1
     ANDI.W  #$000F, D1
-    MOVE.B  D1, curr_nibble
     RTS
 
 isolate_third_nibble
     MOVE.W  curr_word, D1
     LSR.W   #4, D1
     ANDI.W  #$000F, D1
-    MOVE.B  D1, curr_nibble
     RTS
 
 isolate_fourth_nibble
     MOVE.W  curr_word, D1
     ANDI.W  #$000F, D1
-    MOVE.B  D1, curr_nibble
     RTS
     
 *subroutine for hex to ascii
@@ -201,6 +325,14 @@ num_to_ascii
 letter_to_ascii
     ADDI.B   #$37,D1
     RTS
+    
+***
+*end of print memory specific subroutines
+***
+
+***
+*beginning of printing subroutines
+***
 
 *subroutine for trap task 14    
 print_char_of_D1
@@ -209,6 +341,21 @@ print_char_of_D1
     TRAP        #15
     RTS
     
+*subroutine to print a space    
+print_space
+    LEA printSpace, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
+***
+*end of printing subroutines
+***
+    
+***
+*beginning of miscellaneous subroutines
+***
+
 *clear address registers
 clr_addr_regs
     MOVE.L  #0,A0
@@ -237,13 +384,10 @@ clr_all_regs
     JSR clr_addr_regs
     JSR clr_data_regs
     RTS
-
-*subroutine to print a space    
-print_space
-    LEA printSpace, A1
-    MOVE.B  #14, D0
-    TRAP    #15
-    RTS
+    
+***
+*end of miscellaneous subroutines
+***
     
 done
     SIMHALT
@@ -253,12 +397,27 @@ CR  EQU $0D
 LF  EQU $0A
 input   EQU $500
 
+* Put variables and constants here
+*****OPCODE_STRING*****
+printNOP           DC.B    'NOP',0
+printRTS           DC.B    'RTS',0
+printMove          DC.B    'MOVE',0
+printB             DC.B     '.B ',0
+printMinus         DC.B     '-',0
+printPlus          DC.B     '+',0
+printOpenBracket   DC.B     '(',0
+printCloseBracket   DC.B     ')',0
+printDataRegister  DC.B     'D',0
+printRegisterNumber    DC.B    'D',0
+printAddressNumber     DC.B    'A',0
+
 *data and address storage
 start_loc   DS.L    1
 end_loc     DS.L    1
 curr_loc    DS.L    1
-curr_word   DS.W    1
-curr_nibble DS.B    1
+curr_word   DS.W    1   used for printing memory location
+curr_four_nibbles   DS.W    1   used to store actual data in memory
+curr_nibble DS.B    1   stores one nibble
 
 *I/O messages
 introMsg   DC.B    'Welcome to the Motorola 68k disassembler!',CR,0
@@ -268,8 +427,8 @@ promptEnd   DC.B    'Enter an ending address (8 hex digits):',CR,0
 inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_addr, last bit even',CR,0
 
 *formatting
-newLine DC.B    '',CR,0 use with trap task 13
-printSpace  DC.B    ' ',CR,0 use with trap task 14
+newLine DC.B    '',0 use with trap task 13
+printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START
 
