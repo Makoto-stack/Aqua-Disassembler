@@ -25,6 +25,7 @@ OPCODE_TABLE
    JMP CODE1101
    JMP CODE1110
    JMP CODE1111
+   RTS
    
 *****OPCODE SUBROUTINES*****
 *
@@ -38,7 +39,6 @@ CODE0001
    MOVE.B  #$45,(A2)+  *E
    MOVE.B  #$2E,(A2)+  *.
    MOVE.B  #$42,(A2)+  *B
-   RTS
 
 
 *MOVE.L,MOVEA.L
