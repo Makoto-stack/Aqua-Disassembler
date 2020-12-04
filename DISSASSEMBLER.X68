@@ -32,6 +32,14 @@ CODE0000
 
 *MOVE.B
 CODE0001
+   MOVE.B  #$4D,(A2)+  *M
+   MOVE.B  #$4F,(A2)+  *O
+   MOVE.B  #$56,(A2)+  *V
+   MOVE.B  #$45,(A2)+  *E
+   MOVE.B  #$2E,(A2)+  *.
+   MOVE.B  #$42,(A2)+  *B
+   RTS
+
 
 *MOVE.L,MOVEA.L
 CODE0010
