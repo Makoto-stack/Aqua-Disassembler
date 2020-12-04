@@ -134,14 +134,30 @@ EA_CODE_TABLE
    JMP  EACODE111
    
  EACODE000
+   JSR  printDataRegister
+   JSR  printRegisterNumber
+   RTS
  
  EACODE001
+   JSR  printAddressRegister
+   JSR  printRegisterNumber
+   RTS
  
  EACODE010
+   JSR  printOpenBracket
+   JSR  EACODE001
+   JSR  printCloseBracker
+   RTS
  
  EACODE011
+   JSR  MODE_010
+   JSR  printPlus
+   RTS
  
  EACODE100
+   JSR  printMinus
+   JSR  EACODE010
+   RTS
  
  EACODE101
     JMP BADINST
@@ -163,10 +179,17 @@ BADINST
 
 * Put variables and constants here
 *****OPCODE_STRING*****
-printNOP    DC.B    'NOP',0
-printRTS    DC.B    'RTS',0
-printMove   DC.B    'MOVE',0
-printB     DC.B    '.B ',0
+printNOP           DC.B    'NOP',0
+printRTS           DC.B    'RTS',0
+printMove          DC.B    'MOVE',0
+printB             DC.B     '.B ',0
+printMinus         DC.B     '-',0
+printPlus          DC.B     '+',0
+printOpenBracket   DC.B     '(',0
+printOpenBracket   DC.B     ')',0
+printDataRegister  DC.B     'D',0
+printRegisterNumber    DC.B    'R',0
+printAddressNumber     DC.B    'A',0
 
 
     END    START        ; last line of source
