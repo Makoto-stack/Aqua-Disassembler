@@ -46,58 +46,17 @@ CODE0000
 
 *MOVE.B
 CODE0001
-   MOVE.B  #$4D,(A2)+  *M
-   MOVE.B  #$4F,(A2)+  *O
-   MOVE.B  #$56,(A2)+  *V
-   MOVE.B  #$45,(A2)+  *E
-   MOVE.B  #$2E,(A2)+  *.
-   MOVE.B  #$42,(A2)+  *B
-   MOVE.B  #' ',(A2)+
-   BRA     FINISH
+
 
 
 *MOVE.L,MOVEA.L
 CODE0010
-   *check which one to use but we need to figure out how to make that determination
-MOVE_L
-   MOVE.B  #$4D,(A2)+  *M
-   MOVE.B  #$4F,(A2)+  *O
-   MOVE.B  #$56,(A2)+  *V
-   MOVE.B  #$45,(A2)+  *E
-   MOVE.B  #$2E,(A2)+  *.
-   MOVE.B  #$4C,(A2)+  *L
-   BRA     FINISH
-MOVEA_L
-   MOVE.B  #$4D,(A2)+  *M
-   MOVE.B  #$4F,(A2)+  *O
-   MOVE.B  #$56,(A2)+  *V
-   MOVE.B  #$56,(A2)+  *E
-   MOVE.B  #$41,(A2)+  *A
-   MOVE.B  #$2E,(A2)+  *.
-   MOVE.B  #$4C,(A2)+  *L
-   BRA     MOVE_L      
 
 
 *MOVE.W,MOVEA.W
 CODE0011
    *check which one to use but we need to figure out how to make that determination
-MOVE_W
-   MOVE.B  #$4D,(A2)+  *M
-   MOVE.B  #$4F,(A2)+  *O
-   MOVE.B  #$56,(A2)+  *V
-   MOVE.B  #$45,(A2)+  *E
-   MOVE.B  #$2E,(A2)+  *.
-   MOVE.B  #$57,(A2)+  *W
-   BRA     FINISH
-MOVEA_W
-   MOVE.B  #$4D,(A2)+  *M
-   MOVE.B  #$4F,(A2)+  *O
-   MOVE.B  #$56,(A2)+  *V
-   MOVE.B  #$56,(A2)+  *E
-   MOVE.B  #$41,(A2)+  *A
-   MOVE.B  #$2E,(A2)+  *.
-   MOVE.B  #$57,(A2)+  *W
-   BRA     MOVE_W  
+
 
 
 
@@ -147,27 +106,17 @@ CODE1111
 *****BUFFER*****
 
 *****PRINT BAD DATA TO CONSOLE*****
-*address
-   MOVE.B. #0,D4
-   LEA 
-*data
-PRINT_BAD_DATA
-   MOVE.B  #$42,(A2)    *B
-   MOVE.B  #$41,(A2)    *A
-   MOVE.B  #$44,(A2)    *D
-   MOVE.B  #' ',(A2)
-   MOVE.B  #$44,(A2)    *D
-   MOVE.B  #$41,(A2)    *A
-   MOVE.B  #$54,(A2)    *T
-   MOVE.B  #$41,(A2)    *A
-   MOVE.B  #' ',(A2)
-   MOVE.B  #$24,(A2)    *$
+
+
 
 *word
 
 
 
 * Put variables and constants here
+*****OPCODE_STRING*****
+
+
 
     END    START        ; last line of source
 
