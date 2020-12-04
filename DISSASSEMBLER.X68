@@ -52,7 +52,7 @@ CODE0001
    MOVE.B  #$45,(A2)+  *E
    MOVE.B  #$2E,(A2)+  *.
    MOVE.B  #$42,(A2)+  *B
-   MOVE.B  #TAB,(A2)+
+   MOVE.B  #' ',(A2)+
    BRA     FINISH
 
 
