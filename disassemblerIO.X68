@@ -140,13 +140,20 @@ read_memory
     MULU    #6, D0
     LEA FIRST_NIBBLE_TABLE, A1
     JSR 0(A1, D0)
-    JMP done
 
 *check if page needs to be advanced (30 lines)
 advance_page
+    JMP done    temporarily branches to done
 
 *check if ending address has been parsed
 finish_disassembly
+
+*subroutine to increment curr_loc
+increment_by_word
+    MOVE.L  curr_loc, D0
+    ADDI.W   #$2, D0
+    MOVE.L  D0, curr_loc
+    RTS
 
 ***
 *end of memory reading section
@@ -175,24 +182,27 @@ FIRST_NIBBLE_TABLE
    JMP CODE1101 ADD, ADDA
    JMP CODE1110 LSR, LSL, ASR, ASL, ROR, ROL
    JMP CODE1111 not supported
-   RTS
    
 
 *not supported
 CODE0000
-
+    JSR print_data
+    RTS
 
 *MOVE.B
 CODE0001
-
+    JSR print_data
+    RTS
 
 *MOVE.L, MOVEA.L
 CODE0010
-
+    JSR print_data
+    RTS
 
 *MOVE.W, MOVEA.W
 CODE0011
-
+    JSR print_data
+    RTS
 
 *NOP, JSR, LEA, MOVEM, NOT, RTS
 CODE0100
@@ -200,62 +210,75 @@ NOP_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E71, D1
     BNE RTS_check
-    MOVE.B  #14, D0
+    MOVE.B  #13, D0
     LEA printNOP, A1
     TRAP    #15
+    JSR increment_by_word
     RTS
 RTS_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E75, D1
     BNE done
-    MOVE.B  #14, D0
+    MOVE.B  #13, D0
     LEA printRTS, A1
     TRAP    #15
+    JSR increment_by_word
     RTS
 
 *ADDQ
 CODE0101
-
+    JSR print_data
+    RTS
 
 *BRA, BGT, BLE, BEQ
 CODE0110
-
+    JSR print_data
+    RTS
 
 *MOVEQ
 CODE0111
-
+    JSR print_data
+    RTS
 
 *OR
 CODE1000
-
+    JSR print_data
+    RTS
 
 *SUB
 CODE1001
-
+    JSR print_data
+    RTS
 
 *not supported
 CODE1010
-
+    JSR print_data
+    RTS
 
 *not supported
 CODE1011
-
+    JSR print_data
+    RTS
 
 *AND
 CODE1100
-
+    JSR print_data
+    RTS
 
 *ADD, ADDA
 CODE1101
-
+    JSR print_data
+    RTS
 
 *LSR, LSL, ASR, ASL, ROR, ROL
 CODE1110
-
+    JSR print_data
+    RTS
 
 *not supported
 CODE1111
-
+    JSR print_data
+    RTS
 
 
 *put any needed subroutines/jump tables for size, register, EA mode below here
@@ -338,6 +361,14 @@ letter_to_ascii
 *beginning of printing subroutines
 ***
 
+*print data if cannot decode
+print_data
+    LEA printData, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    JSR print_word_of_data
+    RTS
+
 *subroutine for trap task 14    
 print_char_of_D1
     CLR.L   D0
@@ -359,6 +390,47 @@ print_space
 ***
 *beginning of miscellaneous subroutines
 ***
+
+print_word_of_data
+    JSR get_first_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_second_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_third_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_fourth_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+    
+*get subroutines are for printing data in memory
+get_first_nibble
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W   #8, D1
+    LSR.W   #4, D1
+    ANDI.W  #$000F, D1
+    RTS
+
+get_second_nibble
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W   #8, D1
+    ANDI.W  #$000F, D1
+    RTS
+
+get_third_nibble
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W   #4, D1
+    ANDI.W  #$000F, D1
+    RTS
+
+get_fourth_nibble
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$000F, D1
+    RTS
+
 
 *clear address registers
 clr_addr_regs
@@ -403,6 +475,7 @@ input   EQU $500
 
 * Put variables and constants here
 *****OPCODE_STRING*****
+printDATA   DC.B    'DATA ',0
 printNOP           DC.B    'NOP',0
 printRTS           DC.B    'RTS',0
 printMove          DC.B    'MOVE',0
@@ -412,7 +485,7 @@ printPlus          DC.B     '+',0
 printOpenBracket   DC.B     '(',0
 printCloseBracket   DC.B     ')',0
 printDataRegister  DC.B     'D',0
-printRegisterNumber    DC.B    'D',0
+printRegisterNumber    DC.B    'R',0
 printAddressNumber     DC.B    'A',0
 
 *data and address storage
@@ -422,6 +495,7 @@ curr_loc    DS.L    1
 curr_word   DS.W    1   used for printing memory location
 curr_four_nibbles   DS.W    1   used to store actual data in memory
 curr_nibble DS.B    1   stores one nibble
+line_counter    DS.B    1   stores lines, advance page based on this value
 
 *I/O messages
 introMsg   DC.B    'Welcome to the Motorola 68k disassembler!',CR,0
@@ -435,8 +509,8 @@ newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START
-
-
+    
+    
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
