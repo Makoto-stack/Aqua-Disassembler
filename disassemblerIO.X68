@@ -140,6 +140,7 @@ read_memory
     MULU    #6, D0
     LEA FIRST_NIBBLE_TABLE, A1
     JSR 0(A1, D0)
+    JSR increment_by_word
 
 *check if page needs to be advanced (30 lines)
 advance_page
@@ -213,7 +214,6 @@ NOP_check
     MOVE.B  #13, D0
     LEA printNOP, A1
     TRAP    #15
-    JSR increment_by_word
     RTS
 RTS_check
     MOVE.W  curr_four_nibbles, D1
@@ -222,7 +222,6 @@ RTS_check
     MOVE.B  #13, D0
     LEA printRTS, A1
     TRAP    #15
-    JSR increment_by_word
     RTS
 
 *ADDQ
@@ -368,6 +367,21 @@ print_data
     TRAP    #15
     JSR print_word_of_data
     RTS
+    
+print_word_of_data
+    JSR get_first_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_second_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_third_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_fourth_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
 
 *subroutine for trap task 14    
 print_char_of_D1
@@ -390,21 +404,6 @@ print_space
 ***
 *beginning of miscellaneous subroutines
 ***
-
-print_word_of_data
-    JSR get_first_nibble
-    JSR hex_to_ascii
-    JSR print_char_of_D1
-    JSR get_second_nibble
-    JSR hex_to_ascii
-    JSR print_char_of_D1
-    JSR get_third_nibble
-    JSR hex_to_ascii
-    JSR print_char_of_D1
-    JSR get_fourth_nibble
-    JSR hex_to_ascii
-    JSR print_char_of_D1
-    RTS
     
 *get subroutines are for printing data in memory
 get_first_nibble
@@ -509,6 +508,8 @@ newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START
+    
+    
     
     
 *~Font name~Courier New~
