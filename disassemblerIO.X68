@@ -20,8 +20,10 @@ intro
     BRA get_start_loc
 
 disassemble_option
-    LEA introOptionMsg, A1
+    LEA finishedMsg, A1
     MOVE.B  #13, D0
+    TRAP    #15
+    LEA introOptionMsg, A1
     TRAP    #15
     MOVE.B  #5, D0
     TRAP    #15
@@ -33,8 +35,8 @@ disassemble_option
     
 *subroutine to get and save starting location
 get_start_loc
+    JSR clr_all_regs
     LEA promptStart, A1 prompt user
-    CLR.L   D2  make sure D2 is clear
     MOVE.B  #13, D0
     TRAP    #15
     LEA input, A1   get input
@@ -144,10 +146,12 @@ read_memory
 
 *check if page needs to be advanced (30 lines)
 advance_page
-    JMP done    temporarily branches to done
+    *JMP done    temporarily branches to done
 
 *check if ending address has been parsed
 finish_disassembly
+    *some type of check here
+    JMP disassemble_option
 
 *subroutine to increment curr_loc
 increment_by_word
@@ -366,6 +370,7 @@ print_data
     MOVE.B  #14, D0
     TRAP    #15
     JSR print_word_of_data
+    JSR print_line
     RTS
     
 print_word_of_data
@@ -394,6 +399,13 @@ print_char_of_D1
 print_space
     LEA printSpace, A1
     MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
+*subroutine to print a line
+print_line
+    LEA newLine, A1
+    MOVE.B  #13, D0
     TRAP    #15
     RTS
     
@@ -498,7 +510,8 @@ line_counter    DS.B    1   stores lines, advance page based on this value
 
 *I/O messages
 introMsg   DC.B    'Welcome to the Motorola 68k disassembler!',CR,0
-introOptionMsg  DC.B    'Type "y" to initiate disassembly, any other character to exit',CR,0
+introOptionMsg  DC.B    'Type "y" to initiate disassembly, any other character to exit:',CR,0
+finishedMsg DC.B    'Finished disassembly.',CR,0
 promptStart DC.B    'Enter a starting address (8 hex digits):',CR,0
 promptEnd   DC.B    'Enter an ending address (8 hex digits):',CR,0
 inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_addr, last bit even',CR,0
@@ -508,7 +521,6 @@ newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START
-    
     
     
     
