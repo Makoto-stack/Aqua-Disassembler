@@ -143,8 +143,9 @@ prepare_buffer
 read_memory
     JSR print_memory_location
     MOVE.W  curr_four_nibbles, D0
-    LSR.L   #8, D0
-    LSR.L   #4, D0
+    ANDI.L  #$0000FFFF, D0
+    LSR.W   #8, D0
+    LSR.W   #4, D0
     MULU    #6, D0
     LEA FIRST_NIBBLE_TABLE, A1
     JSR 0(A1, D0)
@@ -246,18 +247,14 @@ NOP_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E71, D1
     BNE RTS_check
-    MOVE.B  #14, D0
-    LEA printNOP, A1
-    TRAP    #15
+    JSR print_NOP
     RTS
 
 RTS_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E75, D1
     BNE LEA_check
-    MOVE.B  #14, D0
-    LEA printRTS, A1
-    TRAP    #15
+    JSR print_RTS
     RTS
 
 LEA_check
@@ -318,17 +315,96 @@ print_LEA_mode_111_L
     JSR hex_to_ascii
     JSR print_char_of_D1
     RTS
-    
 
 NOT_check
     MOVE.W  curr_four_nibbles, D1
+    JSR load_bit_triples
     ANDI.W  #$FF00,D1  
     LSR.W   #8,D1
-    CMP.W   #$46,D1
+    CMP.W   #$0046,D1
     BNE     JSR_check
-    MOVE.B  #14,D0
-    LEA     printNOT,A1
-    TRAP    #15
+    JSR print_NOT
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$3, D1
+    CMP.B   #1, D1
+    BLT print_NOTB
+    BEQ print_NOTW
+    CMP.B   #2, D1
+    BEQ print_NOTL
+    JSR print_data
+    RTS
+print_NOTB
+    JSR print_B
+    BRA NOT_check_2
+print_NOTW
+    JSR print_W
+    BRA NOT_check_2
+print_NOTL
+    JSR print_L
+    BRA NOT_check_2
+NOT_check_2
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA NOT_EA_table, A2
+    JSR 0(A2, D1)
+    RTS
+NOT_EA_table
+    JMP NOT_EA_000
+    JMP NOT_EA_001
+    JMP NOT_EA_010
+    JMP NOT_EA_011
+    JMP NOT_EA_100
+    JMP NOT_EA_101
+    JMP NOT_EA_110
+    JMP NOT_EA_111
+NOT_EA_000
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+NOT_EA_001
+    JSR print_data
+    RTS
+NOT_EA_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+NOT_EA_011
+    JSR NOT_EA_010
+    JSR print_plus
+    RTS
+NOT_EA_100
+    JSR print_minus
+    JSR NOT_EA_010
+    RTS
+NOT_EA_101
+    JSR print_data
+    RTS
+NOT_EA_110
+    JSR print_data
+    RTS
+NOT_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BEQ NOT_EA_111_L
+    BLT NOT_EA_111_W
+    JSR print_data
+    RTS
+NOT_EA_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+NOT_EA_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
     RTS
 
 JSR_check
@@ -509,9 +585,27 @@ letter_to_ascii
 *beginning of printing subroutines
 ***
 
+print_NOP
+    MOVE.B  #14, D0
+    LEA printNOP, A1
+    TRAP    #15
+    RTS
+
+print_RTS
+    MOVE.B  #14, D0
+    LEA printRTS, A1
+    TRAP    #15
+    RTS
+
 print_LEA
-    MOVE.B  #14,D0
+    MOVE.B  #14, D0
     LEA     printLEA, A1
+    TRAP    #15
+    RTS
+    
+print_NOT
+    MOVE.B  #14, D0
+    LEA printNOT, A1
     TRAP    #15
     RTS
 
@@ -643,8 +737,38 @@ print_close_paren
     TRAP    #15
     RTS
     
+print_minus
+    LEA printMinus, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_plus
+    LEA printPlus, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
 print_$
     LEA print$, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_B
+    LEA printB, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_W
+    LEA printW, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_L
+    LEA printL, A1
     MOVE.B  #14, D0
     TRAP    #15
     RTS
@@ -727,7 +851,7 @@ input   EQU $500
 * Put variables and constants here
 *****OPCODE_STRING*****
 printJSR    DC.B    'JSR ',0
-printNOT    DC.B    'NOT ',0
+printNOT    DC.B    'NOT',0
 printLEA    DC.B    'LEA ',0
 printDATA   DC.B    'DATA ',0
 printNOP    DC.B    'NOP',0
@@ -779,7 +903,7 @@ promptEnter DC.B    'Press enter to advance page:',CR,0
 newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
-    END    START    
+    END    START  
     
     
 *~Font name~Courier New~
