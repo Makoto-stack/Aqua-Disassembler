@@ -69,7 +69,7 @@ get_end_loc
     BLE invalid_end
     MOVE.L  D2, end_loc save value
     JSR clr_all_regs
-    JMP read_memory begin reading memory
+    JMP prepare_buffer begin reading memory
 
 *ascii to hex subroutine
 ascii_to_hex
@@ -129,6 +129,13 @@ disp_error_message
 *the following section is where memory reading begins
 ***
 
+*set line counter to 30
+prepare_buffer
+    MOVE.B  #30, line_counter
+    MOVE.B  #11, D0 clear screen
+    MOVE.W  #$FF00, D1
+    TRAP    #15
+
 *print address location
 *obtain word of memory
 *jump to table based on first nibble
@@ -145,13 +152,30 @@ read_memory
     JSR increment_by_word
 
 *check if page needs to be advanced (30 lines)
+advance_page_check
+    SUBI.B  #1, line_counter
+    BEQ advance_page
+    BRA finish_disassembly
+
+*advances page
 advance_page
-    *JMP done    temporarily branches to done
+    MOVE.B  #30, line_counter
+    LEA promptEnter, A1
+    MOVE.B  #13, D0
+    TRAP    #15
+    MOVE.B  #5, D0
+    TRAP    #15
+    MOVE.B  #11, D0
+    MOVE.W  #$FF00, D1
+    TRAP    #15
 
 *check if ending address has been parsed
 finish_disassembly
-    *some type of check here
-    JMP disassemble_option
+    MOVE.L  curr_loc, D0
+    MOVE.L  end_loc, D1
+    CMP.L   D1, D0
+    BGT disassemble_option
+    JMP read_memory
 
 *subroutine to increment curr_loc
 increment_by_word
@@ -222,7 +246,7 @@ NOP_check
 RTS_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E75, D1
-    BNE done
+    *BNE done
     MOVE.B  #13, D0
     LEA printRTS, A1
     TRAP    #15
@@ -417,7 +441,7 @@ print_line
 *beginning of miscellaneous subroutines
 ***
     
-*get subroutines are for printing data in memory
+*get subroutines are for getting data in memory
 get_first_nibble
     MOVE.W  curr_four_nibbles, D1
     LSR.W   #8, D1
@@ -487,12 +511,14 @@ input   EQU $500
 * Put variables and constants here
 *****OPCODE_STRING*****
 printDATA   DC.B    'DATA ',0
-printNOP           DC.B    'NOP',0
-printRTS           DC.B    'RTS',0
-printMove          DC.B    'MOVE',0
-printB             DC.B     '.B ',0
-printMinus         DC.B     '-',0
-printPlus          DC.B     '+',0
+printNOP    DC.B    'NOP',0
+printRTS    DC.B    'RTS',0
+printMove   DC.B    'MOVE',0
+printB  DC.B     '.B ',0
+printW  DC.B    '.W ',0
+printL  DC.B    '.L ',0
+printMinus  DC.B     '-',0
+printPlus   DC.B     '+',0
 printOpenBracket   DC.B     '(',0
 printCloseBracket   DC.B     ')',0
 printDataRegister  DC.B     'D',0
@@ -515,6 +541,7 @@ finishedMsg DC.B    'Finished disassembly.',CR,0
 promptStart DC.B    'Enter a starting address (8 hex digits):',CR,0
 promptEnd   DC.B    'Enter an ending address (8 hex digits):',CR,0
 inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_addr, last bit even',CR,0
+promptEnter DC.B    'Press enter to advance page:',CR,0
 
 *formatting
 newLine DC.B    '',0 use with trap task 13
@@ -524,7 +551,3 @@ printSpace  DC.B    ' ',0 use with trap task 14
     
     
     
-*~Font name~Courier New~
-*~Font size~10~
-*~Tab type~1~
-*~Tab size~4~
