@@ -149,8 +149,9 @@ read_memory
     MULU    #6, D0
     LEA FIRST_NIBBLE_TABLE, A1
     JSR 0(A1, D0)
+    JSR print_line
     JSR increment_by_word
-
+    
 *check if page needs to be advanced (30 lines)
 advance_page_check
     SUBI.B  #1, line_counter
@@ -239,16 +240,45 @@ NOP_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E71, D1
     BNE RTS_check
-    MOVE.B  #13, D0
+    MOVE.B  #14, D0
     LEA printNOP, A1
     TRAP    #15
     RTS
 RTS_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E75, D1
-    *BNE done
-    MOVE.B  #13, D0
+    BNE LEA_check
+    MOVE.B  #14, D0
     LEA printRTS, A1
+    TRAP    #15
+    RTS
+LEA_check
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$01C0, D1
+    LSR.W   #6,D1
+    CMP.W   #$7,D1
+    BNE     NOT_check
+    MOVE.B  #14,D0
+    LEA     printLEA, A1
+    TRAP    #15
+    RTS
+NOT_check
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$FF00,D1  
+    LSR.W   #8,D1
+    CMP.W   #$46,D1
+    BNE     JSR_check
+    MOVE.B  #14,D0
+    LEA     printNOT,A1
+    TRAP    #15
+    RTS
+JSR_check
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W    #6,D1
+    CMP.W   #%0000000100111010,D1
+    *BNE     done
+    MOVE.B  #14,D0
+    LEA     printJSR,A1
     TRAP    #15
     RTS
 
@@ -310,8 +340,6 @@ CODE1111
 
 *put any needed subroutines/jump tables for size, register, EA mode below here
 
-
-*put any needed printing subroutines below here
 
 
 ***
@@ -394,7 +422,6 @@ print_data
     MOVE.B  #14, D0
     TRAP    #15
     JSR print_word_of_data
-    JSR print_line
     RTS
     
 print_word_of_data
@@ -510,6 +537,9 @@ input   EQU $500
 
 * Put variables and constants here
 *****OPCODE_STRING*****
+printJSR    DC.B    'JSR ',0
+printNOT    DC.B    'NOT ',0
+printLEA    DC.B    'LEA ',0
 printDATA   DC.B    'DATA ',0
 printNOP    DC.B    'NOP',0
 printRTS    DC.B    'RTS',0
