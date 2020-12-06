@@ -69,7 +69,7 @@ get_end_loc
     BLE invalid_end
     MOVE.L  D2, end_loc save value
     JSR clr_all_regs
-    JMP read_memory begin reading memory
+    JMP prepare_buffer begin reading memory
 
 *ascii to hex subroutine
 ascii_to_hex
@@ -129,35 +129,66 @@ disp_error_message
 *the following section is where memory reading begins
 ***
 
+*set line counter to 30
+prepare_buffer
+    JSR refresh_nibbles
+    MOVE.B  #30, line_counter
+    MOVE.B  #11, D0 clear screen
+    MOVE.W  #$FF00, D1
+    TRAP    #15
+
 *print address location
 *obtain word of memory
 *jump to table based on first nibble
 read_memory
     JSR print_memory_location
-    MOVE.L  curr_loc, A0
-    MOVE.W  (A0), curr_four_nibbles
     MOVE.W  curr_four_nibbles, D0
     LSR.L   #8, D0
     LSR.L   #4, D0
     MULU    #6, D0
     LEA FIRST_NIBBLE_TABLE, A1
     JSR 0(A1, D0)
+    JSR print_line
     JSR increment_by_word
-
+    
 *check if page needs to be advanced (30 lines)
+advance_page_check
+    SUBI.B  #1, line_counter
+    BEQ advance_page
+    BRA finish_disassembly
+
+*advances page
 advance_page
-    *JMP done    temporarily branches to done
+    MOVE.B  #30, line_counter
+    LEA promptEnter, A1
+    MOVE.B  #13, D0
+    TRAP    #15
+    MOVE.B  #5, D0
+    TRAP    #15
+    MOVE.B  #11, D0
+    MOVE.W  #$FF00, D1
+    TRAP    #15
 
 *check if ending address has been parsed
 finish_disassembly
-    *some type of check here
-    JMP disassemble_option
+    MOVE.L  curr_loc, D0
+    MOVE.L  end_loc, D1
+    CMP.L   D1, D0
+    BGT disassemble_option
+    JMP read_memory
 
 *subroutine to increment curr_loc
 increment_by_word
     MOVE.L  curr_loc, D0
     ADDI.W   #$2, D0
     MOVE.L  D0, curr_loc
+    JSR refresh_nibbles
+    RTS
+    
+*subroutine to refresh curr_four_nibbles
+refresh_nibbles
+    MOVE.L  curr_loc, A0
+    MOVE.W  (A0), curr_four_nibbles
     RTS
 
 ***
@@ -215,16 +246,98 @@ NOP_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E71, D1
     BNE RTS_check
-    MOVE.B  #13, D0
+    MOVE.B  #14, D0
     LEA printNOP, A1
     TRAP    #15
     RTS
+
 RTS_check
     MOVE.W  curr_four_nibbles, D1
     CMP.W   #$4E75, D1
-    BNE done
-    MOVE.B  #13, D0
+    BNE LEA_check
+    MOVE.B  #14, D0
     LEA printRTS, A1
+    TRAP    #15
+    RTS
+
+LEA_check
+    MOVE.W  curr_four_nibbles, D1
+    JSR load_bit_triples
+    ANDI.W  #$01C0, D1
+    LSR.W   #6,D1
+    CMP.W   #$7,D1
+    BNE     NOT_check
+    MOVE.B  bits3to5, D1
+    CMP.B   #2, D1
+    BEQ print_LEA_mode_010
+    CMP.B   #7, D1
+    BEQ print_LEA_mode_111
+    JSR print_data
+    RTS
+print_LEA_mode_010
+    JSR print_LEA
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_comma
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+print_LEA_mode_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ print_LEA_mode_111_W
+    CMP.B   #1, D1
+    BEQ print_LEA_mode_111_L
+    JSR print_data
+    RTS
+print_LEA_mode_111_W
+    JSR print_LEA
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    JSR print_comma
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+print_LEA_mode_111_L
+    JSR print_LEA
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    JSR print_comma
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+    
+
+NOT_check
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$FF00,D1  
+    LSR.W   #8,D1
+    CMP.W   #$46,D1
+    BNE     JSR_check
+    MOVE.B  #14,D0
+    LEA     printNOT,A1
+    TRAP    #15
+    RTS
+
+JSR_check
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W    #6,D1
+    CMP.W   #%0000000100111010,D1
+    *BNE     done
+    MOVE.B  #14,D0
+    LEA     printJSR,A1
     TRAP    #15
     RTS
 
@@ -286,9 +399,41 @@ CODE1111
 
 *put any needed subroutines/jump tables for size, register, EA mode below here
 
+get_bits_0_to_2
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$0007, D1
+    MOVE.B  D1, bits0to2
+    RTS
 
-*put any needed printing subroutines below here
+get_bits_3_to_5
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$0038, D1
+    LSR.W   #3, D1
+    MOVE.B  D1, bits3to5
+    RTS
+    
+get_bits_6_to_8
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$01C0, D1
+    LSR.W   #6, D1
+    MOVE.B  D1, bits6to8
+    RTS
 
+get_bits_9_to_11
+    MOVE.W  curr_four_nibbles, D1
+    ANDI.W  #$0E00, D1
+    LSR.W   #8, D1
+    LSR.W   #1, D1
+    MOVE.B  D1, bits9to11
+    RTS
+    
+load_bit_triples
+    JSR get_bits_0_to_2
+    JSR get_bits_3_to_5
+    JSR get_bits_6_to_8
+    JSR get_bits_9_to_11
+    MOVE.W  curr_four_nibbles, D1
+    RTS
 
 ***
 *beginning of print memory specific subroutines
@@ -364,13 +509,18 @@ letter_to_ascii
 *beginning of printing subroutines
 ***
 
+print_LEA
+    MOVE.B  #14,D0
+    LEA     printLEA, A1
+    TRAP    #15
+    RTS
+
 *print data if cannot decode
 print_data
     LEA printData, A1
     MOVE.B  #14, D0
     TRAP    #15
     JSR print_word_of_data
-    JSR print_line
     RTS
     
 print_word_of_data
@@ -386,6 +536,12 @@ print_word_of_data
     JSR get_fourth_nibble
     JSR hex_to_ascii
     JSR print_char_of_D1
+    RTS
+
+print_longword_of_data
+    JSR print_word_of_data
+    JSR increment_by_word
+    JSR print_word_of_data
     RTS
 
 *subroutine for trap task 14    
@@ -409,6 +565,90 @@ print_line
     TRAP    #15
     RTS
     
+print_0
+    LEA print0, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
+print_1
+    LEA print1, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_2
+    LEA print2, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_3
+    LEA print3, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_4
+    LEA print4, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_5
+    LEA print5, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_6
+    LEA print6, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_7
+    LEA print7, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_A
+    LEA printA, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_D
+    LEA printD, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
+print_comma
+    LEA printComma, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
+print_open_paren
+    LEA printOpenParen, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
+print_close_paren
+    LEA printCloseParen, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
+print_$
+    LEA print$, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
 ***
 *end of printing subroutines
 ***
@@ -417,7 +657,7 @@ print_line
 *beginning of miscellaneous subroutines
 ***
     
-*get subroutines are for printing data in memory
+*get subroutines are for getting data in memory
 get_first_nibble
     MOVE.W  curr_four_nibbles, D1
     LSR.W   #8, D1
@@ -486,18 +726,32 @@ input   EQU $500
 
 * Put variables and constants here
 *****OPCODE_STRING*****
+printJSR    DC.B    'JSR ',0
+printNOT    DC.B    'NOT ',0
+printLEA    DC.B    'LEA ',0
 printDATA   DC.B    'DATA ',0
-printNOP           DC.B    'NOP',0
-printRTS           DC.B    'RTS',0
-printMove          DC.B    'MOVE',0
-printB             DC.B     '.B ',0
-printMinus         DC.B     '-',0
-printPlus          DC.B     '+',0
-printOpenBracket   DC.B     '(',0
-printCloseBracket   DC.B     ')',0
-printDataRegister  DC.B     'D',0
-printRegisterNumber    DC.B    'R',0
-printAddressNumber     DC.B    'A',0
+printNOP    DC.B    'NOP',0
+printRTS    DC.B    'RTS',0
+printMove   DC.B    'MOVE',0
+printB  DC.B     '.B ',0
+printW  DC.B    '.W ',0
+printL  DC.B    '.L ',0
+printMinus  DC.B     '-',0
+printPlus   DC.B     '+',0
+printComma  DC.B    ',',0
+printOpenParen   DC.B     '(',0
+printCloseParen   DC.B     ')',0
+printD  DC.B     'D',0
+printA    DC.B    'A',0
+print0  DC.B    '0',0
+print1  DC.B    '1',0
+print2  DC.B    '2',0
+print3  DC.B    '3',0
+print4  DC.B    '4',0
+print5  DC.B    '5',0
+print6  DC.B    '6',0
+print7  DC.B    '7',0
+print$  DC.B    '$',0
 
 *data and address storage
 start_loc   DS.L    1
@@ -506,6 +760,10 @@ curr_loc    DS.L    1
 curr_word   DS.W    1   used for printing memory location
 curr_four_nibbles   DS.W    1   used to store actual data in memory
 curr_nibble DS.B    1   stores one nibble
+bits0to2 DS.B    1
+bits3to5    DS.B    1
+bits6to8    DS.B    1
+bits9to11   DS.B    1
 line_counter    DS.B    1   stores lines, advance page based on this value
 
 *I/O messages
@@ -515,13 +773,13 @@ finishedMsg DC.B    'Finished disassembly.',CR,0
 promptStart DC.B    'Enter a starting address (8 hex digits):',CR,0
 promptEnd   DC.B    'Enter an ending address (8 hex digits):',CR,0
 inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_addr, last bit even',CR,0
+promptEnter DC.B    'Press enter to advance page:',CR,0
 
 *formatting
 newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
-    END    START
-    
+    END    START    
     
     
 *~Font name~Courier New~
