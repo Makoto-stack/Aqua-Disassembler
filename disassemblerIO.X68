@@ -487,7 +487,210 @@ CODE0101
 
 *BRA, BGT, BLE, BEQ
 CODE0110
-    JSR print_data
+    MOVE.W  curr_four_nibbles,D1
+    LSR.W   #8,D1
+    ANDI.W  #$000F, D1
+    CMP.W   #0,D1    *Check if BRA
+    BEQ     BRA_check
+    CMP.W   #$E,D1   *Check if BGT
+    BEQ     BGT_check
+    CMP.W   #$F,D1   *Check if BLE
+    BEQ     BLE_check
+    CMP.W   #$7,D1   *Check if BEQ
+    BEQ     BEQ_check
+    JSR     print_data
+    RTS
+    
+BRA_check
+    MOVE.W  curr_four_nibbles, D1
+    CMP.B   #$00, D1
+    BEQ BRA_16_bit
+    CMP.B   #$FF, D1
+    BEQ BRA_32_bit
+BRA_8_bit
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$000000FF, D3
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+    MOVE.L  D2, abs_address
+    JSR print_BRA
+    JSR print_S
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BRA_16_bit
+    JSR increment_by_word
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$0000FFFF, D3
+    ADD.L   D3, D2
+    MOVE.L  D2, abs_address
+    JSR print_BRA
+    JSR print_W
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BRA_32_bit
+    JSR increment_by_word
+    JSR increment_by_word
+    JSR print_data not supported
+    RTS
+
+BGT_check
+    MOVE.W  curr_four_nibbles, D1
+    CMP.B   #$00, D1
+    BEQ BGT_16_bit
+    CMP.B   #$FF, D1
+    BEQ BGT_32_bit
+BGT_8_bit
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$000000FF, D3
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+    MOVE.L  D2, abs_address
+    JSR print_BGT
+    JSR print_S
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BGT_16_bit
+    JSR increment_by_word
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$0000FFFF, D3
+    ADD.L   D3, D2
+    MOVE.L  D2, abs_address
+    JSR print_BGT
+    JSR print_W
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BGT_32_bit
+    JSR increment_by_word
+    JSR increment_by_word
+    JSR print_data not supported
+    RTS
+
+BLE_check
+    MOVE.W  curr_four_nibbles, D1
+    CMP.B   #$00, D1
+    BEQ BLE_16_bit
+    CMP.B   #$FF, D1
+    BEQ BLE_32_bit
+BLE_8_bit
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$000000FF, D3
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+    MOVE.L  D2, abs_address
+    JSR print_BLE
+    JSR print_S
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BLE_16_bit
+    JSR increment_by_word
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$0000FFFF, D3
+    ADD.L   D3, D2
+    MOVE.L  D2, abs_address
+    JSR print_BLE
+    JSR print_W
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BLE_32_bit
+    JSR increment_by_word
+    JSR increment_by_word
+    JSR print_data not supported
+    RTS
+
+BEQ_check
+    MOVE.W  curr_four_nibbles, D1
+    CMP.B   #$00, D1
+    BEQ BEQ_16_bit
+    CMP.B   #$FF, D1
+    BEQ BEQ_32_bit
+BEQ_8_bit
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$000000FF, D3
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+    MOVE.L  D2, abs_address
+    JSR print_BEQ
+    JSR print_S
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BEQ_16_bit
+    JSR increment_by_word
+    MOVE.L  curr_loc, D2
+    MOVE.W  curr_four_nibbles, D3
+    ANDI.L  #$0000FFFF, D3
+    ADD.L   D3, D2
+    MOVE.L  D2, abs_address
+    JSR print_BEQ
+    JSR print_W
+    JSR print_$
+    LSR.L   #8, D2
+    LSR.L   #8, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    MOVE.L  abs_address, D2
+    MOVE.W  D2, curr_four_nibbles
+    JSR print_word_of_data
+    RTS
+BEQ_32_bit
+    JSR increment_by_word
+    JSR increment_by_word
+    JSR print_data not supported
     RTS
 
 *MOVEQ
@@ -677,6 +880,30 @@ print_JSR
     LEA printJSR, A1
     TRAP    #15
     RTS
+    
+print_BRA
+    MOVE.B  #14, D0
+    LEA printBRA, A1
+    TRAP    #15
+    RTS
+    
+print_BGT
+    MOVE.B  #14, D0
+    LEA printBGT, A1
+    TRAP    #15
+    RTS
+
+print_BLE
+    MOVE.B  #14, D0
+    LEA printBLE, A1
+    TRAP    #15
+    RTS
+
+print_BEQ
+    MOVE.B  #14, D0
+    LEA printBEQ, A1
+    TRAP    #15
+    RTS
 
 *print data if cannot decode
 print_data
@@ -824,6 +1051,12 @@ print_$
     TRAP    #15
     RTS
 
+print_S
+    LEA printS, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+
 print_B
     LEA printB, A1
     MOVE.B  #14, D0
@@ -925,7 +1158,12 @@ printLEA    DC.B    'LEA ',0
 printDATA   DC.B    'DATA ',0
 printNOP    DC.B    'NOP',0
 printRTS    DC.B    'RTS',0
+printBRA    DC.B    'BRA',0
+printBGT    DC.B    'BGT',0
+printBLE    DC.B    'BLE',0
+printBEQ    DC.B    'BEQ',0
 printMove   DC.B    'MOVE',0
+printS  DC.B    '.S ',0
 printB  DC.B     '.B ',0
 printW  DC.B    '.W ',0
 printL  DC.B    '.L ',0
@@ -953,6 +1191,7 @@ curr_loc    DS.L    1
 curr_word   DS.W    1   used for printing memory location
 curr_four_nibbles   DS.W    1   used to store actual data in memory
 curr_nibble DS.B    1   stores one nibble
+abs_address DS.L    1
 op_size DS.B    1
 bits0to2 DS.B    1
 bits3to5    DS.B    1
@@ -974,7 +1213,6 @@ newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START    
-    
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
