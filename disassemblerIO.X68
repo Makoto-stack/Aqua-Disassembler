@@ -266,12 +266,12 @@ LEA_check
     BNE     NOT_check
     MOVE.B  bits3to5, D1
     CMP.B   #2, D1
-    BEQ print_LEA_mode_010
+    BEQ LEA_EA_010
     CMP.B   #7, D1
-    BEQ print_LEA_mode_111
+    BEQ LEA_EA_111
     JSR print_data
     RTS
-print_LEA_mode_010
+LEA_EA_010
     JSR print_LEA
     JSR print_open_paren
     JSR print_A
@@ -285,15 +285,15 @@ print_LEA_mode_010
     JSR hex_to_ascii
     JSR print_char_of_D1
     RTS
-print_LEA_mode_111
+LEA_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
-    BEQ print_LEA_mode_111_W
+    BEQ LEA_EA_111_W
     CMP.B   #1, D1
-    BEQ print_LEA_mode_111_L
+    BEQ LEA_EA_111_L
     JSR print_data
     RTS
-print_LEA_mode_111_W
+LEA_EA_111_W
     JSR print_LEA
     JSR print_$
     JSR increment_by_word
@@ -304,7 +304,7 @@ print_LEA_mode_111_W
     JSR hex_to_ascii
     JSR print_char_of_D1
     RTS
-print_LEA_mode_111_L
+LEA_EA_111_L
     JSR print_LEA
     JSR print_$
     JSR increment_by_word
@@ -318,12 +318,23 @@ print_LEA_mode_111_L
 
 NOT_check
     MOVE.W  curr_four_nibbles, D1
-    JSR load_bit_triples
-    ANDI.W  #$FF00,D1  
+    JSR load_bit_triples 
     LSR.W   #8,D1
     CMP.W   #$0046,D1
     BNE     JSR_check
-    JSR print_NOT
+    MOVE.B  bits3to5, D1
+    CMP.B   #7, D1
+    BEQ NOT_absolute_check
+    BRA NOT_check_2
+NOT_absolute_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BGT NOT_absolute_fail
+    BRA NOT_check_2
+NOT_absolute_fail
+    JSR print_data
+    RTS
+NOT_check_2
     MOVE.B  bits6to8, D1
     ANDI.B  #$3, D1
     CMP.B   #1, D1
@@ -334,15 +345,18 @@ NOT_check
     JSR print_data
     RTS
 print_NOTB
+    JSR print_NOT
     JSR print_B
-    BRA NOT_check_2
+    BRA NOT_check_3
 print_NOTW
+    JSR print_NOT
     JSR print_W
-    BRA NOT_check_2
+    BRA NOT_check_3
 print_NOTL
+    JSR print_NOT
     JSR print_L
-    BRA NOT_check_2
-NOT_check_2
+    BRA NOT_check_3
+NOT_check_3
     MOVE.B  bits3to5, D1
     ANDI.L  #%111, D1
     MULU    #6, D1
@@ -409,12 +423,61 @@ NOT_EA_111_L
 
 JSR_check
     MOVE.W  curr_four_nibbles, D1
+    JSR load_bit_triples
     LSR.W    #6,D1
-    CMP.W   #%0000000100111010,D1
-    *BNE     done
-    MOVE.B  #14,D0
-    LEA     printJSR,A1
-    TRAP    #15
+    CMP.W   #$013A,D1
+    BNE CODE0100_fail *will change to BNE MOVEM_check at some point, MOVEM will branch to CODE0100_fail
+    MOVE.B  bits3to5, D1
+    CMP.B   #7, D1
+    BEQ JSR_absolute_check
+    BRA JSR_check_2
+JSR_absolute_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BGT JSR_absolute_fail
+    BRA JSR_check_2
+JSR_absolute_fail
+    JSR print_data
+    RTS
+JSR_check_2
+    MOVE.B  bits3to5, D1
+    CMP.B   #2, D1
+    BEQ JSR_EA_010
+    CMP.B   #7, D1
+    BEQ JSR_EA_111
+    JSR print_data
+    RTS
+JSR_EA_010
+    JSR print_JSR
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+JSR_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BEQ JSR_EA_111_L
+    BLT JSR_EA_111_W
+    JSR print_data
+    RTS
+JSR_EA_111_W
+    JSR print_JSR
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+JSR_EA_111_L
+    JSR print_JSR
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+    
+CODE0100_fail
+    JSR print_data
     RTS
 
 *ADDQ
@@ -606,6 +669,12 @@ print_LEA
 print_NOT
     MOVE.B  #14, D0
     LEA printNOT, A1
+    TRAP    #15
+    RTS
+    
+print_JSR
+    MOVE.B  #14, D0
+    LEA printJSR, A1
     TRAP    #15
     RTS
 
@@ -884,6 +953,7 @@ curr_loc    DS.L    1
 curr_word   DS.W    1   used for printing memory location
 curr_four_nibbles   DS.W    1   used to store actual data in memory
 curr_nibble DS.B    1   stores one nibble
+op_size DS.B    1
 bits0to2 DS.B    1
 bits3to5    DS.B    1
 bits6to8    DS.B    1
@@ -903,8 +973,7 @@ promptEnter DC.B    'Press enter to advance page:',CR,0
 newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
-    END    START  
-    
+    END    START    
     
 *~Font name~Courier New~
 *~Font size~10~
