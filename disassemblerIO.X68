@@ -849,6 +849,7 @@ LS_memory_010
     JSR print_LS
 AS_RO_010
     JSR LS_memory_dr
+    JSR print_W
     JSR print_space
     JSR print_open_paren
     JSR print_A
@@ -861,6 +862,7 @@ LS_memory_011
     JSR print_LS
 AS_RO_011
     JSR LS_memory_dr
+    JSR print_W
     JSR print_space
     JSR print_open_paren
     JSR print_A
@@ -874,6 +876,7 @@ LS_memory_100
     JSR print_LS
 AS_RO_100
     JSR LS_memory_dr
+    JSR print_W
     JSR print_space
     JSR print_minus
     JSR print_open_paren
@@ -893,6 +896,7 @@ LS_memory_111_W
     JSR print_LS
 AS_RO_111_W
     JSR LS_memory_dr
+    JSR print_W
     JSR print_space
     JSR print_$
     JSR increment_by_word
@@ -902,6 +906,7 @@ LS_memory_111_L
     JSR print_LS
 AS_RO_111_L
     JSR LS_memory_dr
+    JSR print_W
     JSR print_space
     JSR print_$
     JSR increment_by_word
