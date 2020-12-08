@@ -745,9 +745,9 @@ CODE1110_mem_check
     CMP.W   #$71, D1
     BEQ LS_memory
     CMP.W   #$70, D1
-    BEQ AS_check    *will become AS_memory
+    BEQ AS_memory
     CMP.W   #$73, D1
-    BEQ RO_check    *will become RO_memory (possibly)
+    BEQ RO_memory
     JSR print_data
     RTS
 
@@ -767,6 +767,7 @@ LS_register *LS register mode
     LSR.B   #2, D1
     MOVE.B  D1, ir
     JSR print_LS
+shift_reuse
     MOVE.B  dr, D1  reuse code from here for AS, RO? (register)
     CMP.B   #1, D1
     BEQ LSL_register_pre
@@ -846,6 +847,7 @@ LS_memory   *LS memory mode
     BRA LS_invalid
 LS_memory_010
     JSR print_LS
+AS_RO_010
     JSR LS_memory_dr
     JSR print_space
     JSR print_open_paren
@@ -857,6 +859,7 @@ LS_memory_010
     RTS
 LS_memory_011
     JSR print_LS
+AS_RO_011
     JSR LS_memory_dr
     JSR print_space
     JSR print_open_paren
@@ -869,6 +872,7 @@ LS_memory_011
     RTS
 LS_memory_100
     JSR print_LS
+AS_RO_100
     JSR LS_memory_dr
     JSR print_space
     JSR print_minus
@@ -887,6 +891,7 @@ LS_memory_111
     BEQ LS_memory_111_L
 LS_memory_111_W
     JSR print_LS
+AS_RO_111_W
     JSR LS_memory_dr
     JSR print_space
     JSR print_$
@@ -895,6 +900,7 @@ LS_memory_111_W
     RTS
 LS_memory_111_L
     JSR print_LS
+AS_RO_111_L
     JSR LS_memory_dr
     JSR print_space
     JSR print_$
@@ -920,12 +926,104 @@ LS_invalid
     RTS
 
 AS_check
-    JSR print_data  placeholder
-    RTS
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$3, D1
+    MOVE.B  D1, op_size
+    CMP.B   #3, D1
+    BEQ AS_memory
+AS_register
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$4, D1
+    LSR.B   #2, D1
+    MOVE.B  D1, dr
+    MOVE.B  bits3to5, D1
+    ANDI.B  #$4, D1
+    LSR.B   #2, D1
+    MOVE.B  D1, ir
+    JSR print_AS
+    JMP shift_reuse
+AS_memory
+    MOVE.B  bits3to5, D1
+    CMP.B   #2, D1
+    BEQ AS_memory_010
+    CMP.B   #3, D1
+    BEQ AS_memory_011
+    CMP.B   #4, D1
+    BEQ AS_memory_100
+    CMP.B   #7, D1
+    BEQ AS_memory_111
+    BRA LS_invalid
+AS_memory_010
+    JSR print_AS
+    BRA AS_RO_010
+AS_memory_011
+    JSR print_AS
+    BRA AS_RO_011
+AS_memory_100
+    JSR print_AS
+    BRA AS_RO_100
+AS_memory_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BGT LS_invalid
+    BLT AS_memory_111_W
+    BEQ AS_memory_111_L
+AS_memory_111_W
+    JSR print_AS
+    BRA AS_RO_111_W
+AS_memory_111_L
+    JSR print_AS
+    BRA AS_RO_111_L
 
 RO_check
-    JSR print_data  placeholder, will refer back to LSL/R code
-    RTS
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$3, D1
+    MOVE.B  D1, op_size
+    CMP.B   #3, D1
+    BEQ RO_memory
+RO_register
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$4, D1
+    LSR.B   #2, D1
+    MOVE.B  D1, dr
+    MOVE.B  bits3to5, D1
+    ANDI.B  #$4, D1
+    LSR.B   #2, D1
+    MOVE.B  D1, ir
+    JSR print_RO
+    JMP shift_reuse
+RO_memory
+    MOVE.B  bits3to5, D1
+    CMP.B   #2, D1
+    BEQ RO_memory_010
+    CMP.B   #3, D1
+    BEQ RO_memory_011
+    CMP.B   #4, D1
+    BEQ RO_memory_100
+    CMP.B   #7, D1
+    BEQ RO_memory_111
+    BRA LS_invalid
+RO_memory_010
+    JSR print_RO
+    BRA AS_RO_010
+RO_memory_011
+    JSR print_RO
+    BRA AS_RO_011
+RO_memory_100
+    JSR print_RO
+    BRA AS_RO_100
+RO_memory_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BGT LS_invalid
+    BLT RO_memory_111_W
+    BEQ RO_memory_111_L
+RO_memory_111_W
+    JSR print_RO
+    BRA AS_RO_111_W
+RO_memory_111_L
+    JSR print_RO
+    BRA AS_RO_111_L
 
 *not supported
 CODE1111
