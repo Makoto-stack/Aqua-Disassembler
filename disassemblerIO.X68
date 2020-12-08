@@ -487,16 +487,16 @@ CODE0101
 
 *BRA, BGT, BLE, BEQ
 CODE0110
-    MOVE.W  curr_four_nibbles,D1
-    LSR.W   #8,D1
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W   #8, D1
     ANDI.W  #$000F, D1
-    CMP.W   #0,D1    *Check if BRA
+    CMP.W   #0, D1    *Check if BRA
     BEQ     BRA_check
-    CMP.W   #$E,D1   *Check if BGT
+    CMP.W   #$E, D1   *Check if BGT
     BEQ     BGT_check
-    CMP.W   #$F,D1   *Check if BLE
+    CMP.W   #$F, D1   *Check if BLE
     BEQ     BLE_check
-    CMP.W   #$7,D1   *Check if BEQ
+    CMP.W   #$7, D1   *Check if BEQ
     BEQ     BEQ_check
     JSR     print_data
     RTS
@@ -544,8 +544,6 @@ BRA_16_bit
     JSR print_word_of_data
     RTS
 BRA_32_bit
-    JSR increment_by_word
-    JSR increment_by_word
     JSR print_data not supported
     RTS
 
@@ -592,8 +590,6 @@ BGT_16_bit
     JSR print_word_of_data
     RTS
 BGT_32_bit
-    JSR increment_by_word
-    JSR increment_by_word
     JSR print_data not supported
     RTS
 
@@ -640,8 +636,6 @@ BLE_16_bit
     JSR print_word_of_data
     RTS
 BLE_32_bit
-    JSR increment_by_word
-    JSR increment_by_word
     JSR print_data not supported
     RTS
 
@@ -688,8 +682,6 @@ BEQ_16_bit
     JSR print_word_of_data
     RTS
 BEQ_32_bit
-    JSR increment_by_word
-    JSR increment_by_word
     JSR print_data not supported
     RTS
 
@@ -730,8 +722,193 @@ CODE1101
 
 *LSR, LSL, ASR, ASL, ROR, ROL
 CODE1110
+    JSR load_bit_triples
+    MOVE.B  bits3to5, D1
+    ANDI.B  #$3, D1
+    CMP.B   #1, D1
+    BEQ LS_check
+    CMP.B   #0, D1
+    BEQ AS_check
+    CMP.B   #3, D1
+    BEQ RO_check
     JSR print_data
     RTS
+
+LS_check
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$3, D1
+    MOVE.B  D1, op_size
+    CMP.B   #3, D1
+    BEQ LS_memory   *reuse code somewhere around here for AS, RO? (memory)
+LS_register *LS register mode
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$4, D1
+    LSR.B   #2, D1
+    MOVE.B  D1, dr
+    MOVE.B  bits3to5, D1
+    ANDI.B  #$4, D1
+    LSR.B   #2, D1
+    MOVE.B  D1, ir
+    JSR print_LS
+    MOVE.B  dr, D1  reuse code from here for AS, RO? (register)
+    CMP.B   #1, D1
+    BEQ LSL_register_pre
+    JMP LSR_register
+LSL_register_pre
+    JSR print_left
+LSL_register
+    MOVE.B  op_size, D1
+    CMP.B   #1, D1
+    BLT LSL_register_B
+    BEQ LSL_register_W
+    BGT LSL_register_L
+LSL_register_B
+    JSR print_B
+    BRA LSL_register_ir_check
+LSL_register_W
+    JSR print_W
+    BRA LSL_register_ir_check
+LSL_register_L
+    JSR print_L
+    BRA LSL_register_ir_check
+LSL_register_ir_check
+    MOVE.B  ir, D1
+    CMP.B   #0, D1
+    BEQ LSL_register_ir_0
+    BRA LSL_register_ir_1
+LSL_register_ir_0
+    JSR print_hashtag
+    MOVE.B  bits9to11, D1
+    CMP.B   #0, D1
+    BEQ LSL_register_ir_0_8
+    BRA LSL_register_ir_0_other
+LSL_register_ir_0_8
+    MOVE.B  #8, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+LSL_register_ir_0_other
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+LSL_register_ir_1
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+LSR_register
+    JSR print_right
+    JMP LSL_register apart from direction, exactly the same
+LS_memory   *LS memory mode
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W   #8, D1
+    LSR.W   #1, D1
+    CMP.W   #$71, D1
+    BNE LS_invalid
+    MOVE.B  bits3to5, D1
+    CMP.B   #2, D1
+    BEQ LS_memory_010
+    CMP.B   #3, D1
+    BEQ LS_memory_011
+    CMP.B   #4, D1
+    BEQ LS_memory_100
+    CMP.B   #7, D1
+    BEQ LS_memory_111
+    BRA LS_invalid
+LS_memory_010
+    JSR LS_memory_dr
+    JSR print_space
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+LS_memory_011
+    JSR LS_memory_dr
+    JSR print_space
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+LS_memory_100
+    JSR LS_memory_dr
+    JSR print_space
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+LS_memory_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BGT LS_invalid
+    BLT LS_memory_111_W
+    BEQ LS_memory_111_L
+LS_memory_111_W
+    JSR print_LS
+    JSR LS_memory_dr
+    JSR print_space
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+LS_memory_111_L
+    JSR print_LS
+    JSR LS_memory_dr
+    JSR print_space
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+LS_memory_dr
+    MOVE.B  bits6to8, D1
+    ANDI.B  #$4, D1
+    LSR.B   #2, D1
+    MOVE.B  D1, dr
+    CMP.B   #1, D1
+    BEQ LS_memory_L
+    BRA LS_memory_R
+LS_memory_L
+    JSR print_left
+    RTS
+LS_memory_R
+    JSR print_right
+    RTS
+LS_invalid
+    JSR print_data
+    RTS
+
+AS_check
+
+
+RO_check
+ 
 
 *not supported
 CODE1111
@@ -781,6 +958,7 @@ load_bit_triples
 *beginning of print memory specific subroutines
 ***
 print_memory_location
+    JSR clr_all_regs
     MOVE.L  curr_loc, D0    *load current address
     LSR.L   #8, D0
     LSR.L   #8, D0
@@ -902,6 +1080,36 @@ print_BLE
 print_BEQ
     MOVE.B  #14, D0
     LEA printBEQ, A1
+    TRAP    #15
+    RTS
+    
+print_LS
+    MOVE.B  #14, D0
+    LEA printLS, A1
+    TRAP    #15
+    RTS
+
+print_AS
+    MOVE.B  #14, D0
+    LEA printAS, A1
+    TRAP    #15
+    RTS
+
+print_RO
+    MOVE.B  #14, D0
+    LEA printRO, A1
+    TRAP    #15
+    RTS
+
+print_left
+    MOVE.B  #14, D0
+    LEA printLeft, A1
+    TRAP    #15
+    RTS
+
+print_right
+    MOVE.B  #14, D0
+    LEA printRight, A1
     TRAP    #15
     RTS
 
@@ -1050,6 +1258,12 @@ print_$
     MOVE.B  #14, D0
     TRAP    #15
     RTS
+    
+print_hashtag
+    LEA printHashtag, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
 
 print_S
     LEA printS, A1
@@ -1183,6 +1397,12 @@ print5  DC.B    '5',0
 print6  DC.B    '6',0
 print7  DC.B    '7',0
 print$  DC.B    '$',0
+printHashtag  DC.B    '#',0
+printLS DC.B    'LS',0
+printAS DC.B    'AS',0
+printRO DC.B    'RO',0
+printLeft   DC.B    'L',0    left shift
+printRight  DC.B    'R',0   right shift
 
 *data and address storage
 start_loc   DS.L    1
@@ -1191,8 +1411,10 @@ curr_loc    DS.L    1
 curr_word   DS.W    1   used for printing memory location
 curr_four_nibbles   DS.W    1   used to store actual data in memory
 curr_nibble DS.B    1   stores one nibble
-abs_address DS.L    1
-op_size DS.B    1
+abs_address DS.L    1   absolute address for branching
+op_size DS.B    1   size of operation
+dr  DS.B    1   direction of shift
+ir  DS.B    1   immediate or register
 bits0to2 DS.B    1
 bits3to5    DS.B    1
 bits6to8    DS.B    1
@@ -1212,7 +1434,9 @@ promptEnter DC.B    'Press enter to advance page:',CR,0
 newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
-    END    START    
+    END    START
+
+  
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
