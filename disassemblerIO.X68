@@ -511,8 +511,8 @@ BRA_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.L   D3, D2
-    ADD.L   #2, D2
+    ADD.B   D3, D2  testing level of byte for backward branching, will need to apply to all other branching inst
+    ADD.B   #2, D2  testing level of byte for backward branching
     MOVE.L  D2, abs_address
     JSR print_BRA
     JSR print_S
@@ -530,7 +530,7 @@ BRA_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.L   D3, D2
+    ADD.W   D3, D2  testing level of word for backward branching
     MOVE.L  D2, abs_address
     JSR print_BRA
     JSR print_W
@@ -557,8 +557,8 @@ BGT_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.L   D3, D2
-    ADD.L   #2, D2
+    ADD.B   D3, D2
+    ADD.B   #2, D2
     MOVE.L  D2, abs_address
     JSR print_BGT
     JSR print_S
@@ -576,7 +576,7 @@ BGT_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.L   D3, D2
+    ADD.W   D3, D2
     MOVE.L  D2, abs_address
     JSR print_BGT
     JSR print_W
@@ -603,8 +603,8 @@ BLE_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.L   D3, D2
-    ADD.L   #2, D2
+    ADD.B   D3, D2
+    ADD.B   #2, D2
     MOVE.L  D2, abs_address
     JSR print_BLE
     JSR print_S
@@ -622,7 +622,7 @@ BLE_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.L   D3, D2
+    ADD.W   D3, D2
     MOVE.L  D2, abs_address
     JSR print_BLE
     JSR print_W
@@ -649,8 +649,8 @@ BEQ_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.L   D3, D2
-    ADD.L   #2, D2
+    ADD.B   D3, D2
+    ADD.B   #2, D2
     MOVE.L  D2, abs_address
     JSR print_BEQ
     JSR print_S
@@ -668,7 +668,7 @@ BEQ_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.L   D3, D2
+    ADD.W   D3, D2
     MOVE.L  D2, abs_address
     JSR print_BEQ
     JSR print_W
