@@ -732,22 +732,23 @@ CODE1101
 CODE1110
     MOVE.L  curr_four_nibbles,D1    
     ANDI.L  #%0000000011000000,D1   *get shift size
-    MOVE.L  D1,shiftsize
+    MOVE.B  D1,shiftsize
     MOVE.L  curr_four_nibbles,D1
     ANDI.L  #%0000000000001100,D1   *get what kind of shift/rotate
-    MOVE.L  D1,shiftID
+    MOVE.B  D1,shiftID
     MOVE.L  curr_four_nibbles,D1
     ANDI.L  #%0000000000010000,D1   *get I/R
-    MOVE.L  D1,shiftIR
+    MOVE.B  D1,shiftIR
     MOVE.L  curr_four_nibbles,D1
     ANDI.L  #%0000000100000000,D1
-    MOVE.L  D1,shiftDir             *get shift direction
+    MOVE.B  D1,shiftDir             *get shift direction
     MOVE.L  curr_four_nibbles,D1
     ANDI.L  #%0000111000000000,D1   *get count/register 
-    MOVE.L  D1,shiftCount
+    MOVE.B  D1,shiftCount
     MOVE.L  curr_four_nibbles,D1
     ANDI.L  #%0000000000000111,D1
-    MOVE.L  D1,shiftReg             *get register
+    MOVE.B  D1,shiftReg             *get register
+    RTS
     
     
 
@@ -1238,6 +1239,7 @@ newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START    
+
 
 *~Font name~Courier New~
 *~Font size~10~

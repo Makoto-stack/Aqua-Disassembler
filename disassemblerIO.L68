@@ -1,0 +1,1458 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 12/7/2020 11:08:07 PM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : 68k Disassembler
+00000000                             3  * Written by : Aqua Axolotols
+00000000                             4  * Date       : 11/29/2020
+00000000                             5  * Description: I/O testing
+00000000                             6  *-----------------------------------------------------------
+00001000                             7      ORG    $1000
+00001000                             8  START:
+00001000                             9  
+00001000                            10  ***
+00001000                            11  *this whole section is dedicated to I/O
+00001000                            12  *prints intro, asks user if they want to disassemble (loop)
+00001000                            13  *obtains start and end addresses, stores in memory
+00001000                            14  ***
+00001000                            15  
+00001000                            16  intro
+00001000  43F9 00001E7E             17      LEA introMsg, A1
+00001006  103C 000D                 18      MOVE.B  #13, D0
+0000100A  4E4F                      19      TRAP    #15
+0000100C  6000 0030                 20      BRA get_start_loc
+00001010                            21  
+00001010                            22  disassemble_option
+00001010  43F9 00001EE9             23      LEA finishedMsg, A1
+00001016  103C 000D                 24      MOVE.B  #13, D0
+0000101A  4E4F                      25      TRAP    #15
+0000101C  43F9 00001EA9             26      LEA introOptionMsg, A1
+00001022  4E4F                      27      TRAP    #15
+00001024  103C 0005                 28      MOVE.B  #5, D0
+00001028  4E4F                      29      TRAP    #15
+0000102A  B23C 0079                 30      CMP.B   #$79, D1
+0000102E  6600 0DC6                 31      BNE done
+00001032  43F9 00001FC2             32      LEA newLine, A1
+00001038  103C 000D                 33      MOVE.B  #13, D0
+0000103C  4E4F                      34      TRAP    #15
+0000103E                            35      
+0000103E                            36  *subroutine to get and save starting location
+0000103E                            37  get_start_loc
+0000103E  4EB9 00001DEC             38      JSR clr_all_regs
+00001044  43F9 00001F00             39      LEA promptStart, A1 prompt user
+0000104A  103C 000D                 40      MOVE.B  #13, D0
+0000104E  4E4F                      41      TRAP    #15
+00001050  43F9 00000500             42      LEA input, A1   get input
+00001056  103C 0002                 43      MOVE.B  #2, D0
+0000105A  4E4F                      44      TRAP    #15
+0000105C  0C01 0008                 45      CMPI.B  #8, D1  check length
+00001060  6E00 00B2                 46      BGT invalid_start
+00001064  6100 0064                 47      BSR ascii_to_hex    convert to hex
+00001068  0802 0000                 48      BTST    #0, D2  check last bit
+0000106C  6600 00A6                 49      BNE invalid_start
+00001070  23C2 00001E5C             50      MOVE.L  D2, start_loc   save value
+00001076  23C2 00001E64             51      MOVE.L  D2, curr_loc    current location is start
+0000107C                            52  
+0000107C                            53  *subroutine to get and save ending location
+0000107C                            54  get_end_loc    
+0000107C  1E3C 0001                 55      MOVE.B  #1, D7  keep track start or end address
+00001080  4282                      56      CLR.L   D2  make sure D2 is clear
+00001082  43F9 00001F2A             57      LEA promptEND, A1   prompt user
+00001088  103C 000D                 58      MOVE.B  #13, D0
+0000108C  4E4F                      59      TRAP    #15
+0000108E  43F9 00000500             60      LEA input, A1   get input
+00001094  103C 0002                 61      MOVE.B  #2, D0
+00001098  4E4F                      62      TRAP    #15
+0000109A  0C01 0008                 63      CMPI.B  #8, D1  check length
+0000109E  6E00 007C                 64      BGT invalid_end
+000010A2  6100 0026                 65      BSR ascii_to_hex    convert to hex
+000010A6  0802 0000                 66      BTST    #0, D2  check last bit
+000010AA  6600 0070                 67      BNE invalid_end
+000010AE  B4B9 00001E5C             68      CMP.L   start_loc, D2  make sure start < end
+000010B4  6F00 0066                 69      BLE invalid_end
+000010B8  23C2 00001E60             70      MOVE.L  D2, end_loc save value
+000010BE  4EB9 00001DEC             71      JSR clr_all_regs
+000010C4  4EF9 00001132             72      JMP prepare_buffer begin reading memory
+000010CA                            73  
+000010CA                            74  *ascii to hex subroutine
+000010CA                            75  ascii_to_hex
+000010CA  1019                      76      MOVE.B  (A1)+, D0   one byte of input
+000010CC  B03C 0030                 77      CMP.B   #$30, D0
+000010D0  6D00 0036                 78      BLT start_or_end    error message depending on address
+000010D4  B03C 0039                 79      CMP.B   #$39, D0
+000010D8  6E00 0010                 80      BGT ascii_to_letter
+000010DC  0400 0030                 81      SUBI.B  #$30, D0
+000010E0  E982                      82      ASL.L   #4, D2
+000010E2  D480                      83      ADD.L   D0, D2
+000010E4  5341                      84      SUBI.W  #1, D1
+000010E6  66E2                      85      BNE ascii_to_hex
+000010E8  4E75                      86      RTS
+000010EA                            87  
+000010EA                            88  *ascii to letter subroutine    
+000010EA                            89  ascii_to_letter
+000010EA  B03C 0041                 90      CMP.B   #$41, D0
+000010EE  6D00 0018                 91      BLT start_or_end    error message depending on address
+000010F2  B03C 0046                 92      CMP.B   #$46, D0
+000010F6  6E00 0010                 93      BGT start_or_end    error message depending on address
+000010FA  0400 0037                 94      SUBI.B  #$37, D0
+000010FE  E982                      95      ASL.L   #4, D2
+00001100  D480                      96      ADD.L   D0, D2
+00001102  5341                      97      SUBI.W  #1, D1
+00001104  66C4                      98      BNE ascii_to_hex
+00001106  4E75                      99      RTS
+00001108                           100  
+00001108                           101  *error message for start or end address
+00001108                           102  start_or_end
+00001108  BE3C 0001                103      CMP.B   #1, D7
+0000110C  6600 0006                104      BNE invalid_start
+00001110  6000 000A                105      BRA invalid_end
+00001114                           106  
+00001114                           107  *error message for start
+00001114                           108  invalid_start
+00001114  6100 000E                109      BSR disp_error_message
+00001118  6000 FF24                110      BRA get_start_loc
+0000111C                           111  
+0000111C                           112  *error message for end
+0000111C                           113  invalid_end
+0000111C  6100 0006                114      BSR disp_error_message
+00001120  6000 FF5A                115      BRA get_end_loc
+00001124                           116  
+00001124                           117  *error message dispay
+00001124                           118  disp_error_message
+00001124  43F9 00001F53            119      LEA inputError, A1
+0000112A  103C 000D                120      MOVE.B  #13, D0
+0000112E  4E4F                     121      TRAP    #15
+00001130  4E75                     122      RTS
+00001132                           123  
+00001132                           124  ***
+00001132                           125  *end of I/O section
+00001132                           126  ***
+00001132                           127  
+00001132                           128  ***
+00001132                           129  *the following section is where memory reading begins
+00001132                           130  ***
+00001132                           131  
+00001132                           132  *set line counter to 30
+00001132                           133  prepare_buffer
+00001132  4EB9 000011D8            134      JSR refresh_nibbles
+00001138  13FC 001E 00001E77       135      MOVE.B  #30, line_counter
+00001140  103C 000B                136      MOVE.B  #11, D0 clear screen
+00001144  323C FF00                137      MOVE.W  #$FF00, D1
+00001148  4E4F                     138      TRAP    #15
+0000114A                           139  
+0000114A                           140  *print address location
+0000114A                           141  *obtain word of memory
+0000114A                           142  *jump to table based on first nibble
+0000114A                           143  read_memory
+0000114A  4EB9 00001A90            144      JSR print_memory_location
+00001150  3039 00001E6A            145      MOVE.W  curr_four_nibbles, D0
+00001156  0280 0000FFFF            146      ANDI.L  #$0000FFFF, D0
+0000115C  E048                     147      LSR.W   #8, D0
+0000115E  E848                     148      LSR.W   #4, D0
+00001160  C0FC 0006                149      MULU    #6, D0
+00001164  43F9 000011E6            150      LEA FIRST_NIBBLE_TABLE, A1
+0000116A  4EB1 0000                151      JSR 0(A1, D0)
+0000116E  4EB9 00001C50            152      JSR print_line
+00001174  4EB9 000011C2            153      JSR increment_by_word
+0000117A                           154      
+0000117A                           155  *check if page needs to be advanced (30 lines)
+0000117A                           156  advance_page_check
+0000117A  5339 00001E77            157      SUBI.B  #1, line_counter
+00001180  6700 0006                158      BEQ advance_page
+00001184  6000 0026                159      BRA finish_disassembly
+00001188                           160  
+00001188                           161  *advances page
+00001188                           162  advance_page
+00001188  13FC 001E 00001E77       163      MOVE.B  #30, line_counter
+00001190  43F9 00001FA4            164      LEA promptEnter, A1
+00001196  103C 000D                165      MOVE.B  #13, D0
+0000119A  4E4F                     166      TRAP    #15
+0000119C  103C 0005                167      MOVE.B  #5, D0
+000011A0  4E4F                     168      TRAP    #15
+000011A2  103C 000B                169      MOVE.B  #11, D0
+000011A6  323C FF00                170      MOVE.W  #$FF00, D1
+000011AA  4E4F                     171      TRAP    #15
+000011AC                           172  
+000011AC                           173  *check if ending address has been parsed
+000011AC                           174  finish_disassembly
+000011AC  2039 00001E64            175      MOVE.L  curr_loc, D0
+000011B2  2239 00001E60            176      MOVE.L  end_loc, D1
+000011B8  B081                     177      CMP.L   D1, D0
+000011BA  6E00 FE54                178      BGT disassemble_option
+000011BE  4EF8 114A                179      JMP read_memory
+000011C2                           180  
+000011C2                           181  *subroutine to increment curr_loc
+000011C2                           182  increment_by_word
+000011C2  2039 00001E64            183      MOVE.L  curr_loc, D0
+000011C8  5440                     184      ADDI.W   #$2, D0
+000011CA  23C0 00001E64            185      MOVE.L  D0, curr_loc
+000011D0  4EB9 000011D8            186      JSR refresh_nibbles
+000011D6  4E75                     187      RTS
+000011D8                           188      
+000011D8                           189  *subroutine to refresh curr_four_nibbles
+000011D8                           190  refresh_nibbles
+000011D8  2079 00001E64            191      MOVE.L  curr_loc, A0
+000011DE  33D0 00001E6A            192      MOVE.W  (A0), curr_four_nibbles
+000011E4  4E75                     193      RTS
+000011E6                           194  
+000011E6                           195  ***
+000011E6                           196  *end of memory reading section
+000011E6                           197  ***
+000011E6                           198  
+000011E6                           199  ***
+000011E6                           200  *beginning of parsing opword subroutines
+000011E6                           201  ***
+000011E6                           202  
+000011E6                           203  *****JUMP TABLE*****
+000011E6                           204  *LOOK AT FIRST FOUR BITS AND DETERMINE WHICH OPCODE TO USE
+000011E6                           205  FIRST_NIBBLE_TABLE
+000011E6  4EF9 00001246            206     JMP CODE0000 not supported
+000011EC  4EF9 0000124E            207     JMP CODE0001 MOVE.B
+000011F2  4EF9 00001256            208     JMP CODE0010 MOVE.L, MOVEA.L
+000011F8  4EF9 0000125E            209     JMP CODE0011 MOVE.W, MOVEA.W
+000011FE  4EF9 00001266            210     JMP CODE0100 NOP, JSR, LEA, MOVEM, NOT, RTS
+00001204  4EF9 0000160E            211     JMP CODE0101 ADDQ
+0000120A  4EF9 00001616            212     JMP CODE0110 BRA, BGT, BLE, BEQ
+00001210  4EF9 0000197A            213     JMP CODE0111 MOVEQ
+00001216  4EF9 00001982            214     JMP CODE1000 OR
+0000121C  4EF9 0000198A            215     JMP CODE1001 SUB
+00001222  4EF9 00001992            216     JMP CODE1010 not supported
+00001228  4EF9 0000199A            217     JMP CODE1011 not supported
+0000122E  4EF9 000019A2            218     JMP CODE1100 AND
+00001234  4EF9 000019AA            219     JMP CODE1101 ADD, ADDA
+0000123A  4EF9 000019B2            220     JMP CODE1110 LSR, LSL, ASR, ASL, ROR, ROL
+00001240  4EF9 00001A20            221     JMP CODE1111 not supported
+00001246                           222     
+00001246                           223  
+00001246                           224  *not supported
+00001246                           225  CODE0000
+00001246  4EB9 00001BD4            226      JSR print_data
+0000124C  4E75                     227      RTS
+0000124E                           228  
+0000124E                           229  *MOVE.B
+0000124E                           230  CODE0001
+0000124E  4EB9 00001BD4            231      JSR print_data
+00001254  4E75                     232      RTS
+00001256                           233  
+00001256                           234  *MOVE.L, MOVEA.L
+00001256                           235  CODE0010
+00001256  4EB9 00001BD4            236      JSR print_data
+0000125C  4E75                     237      RTS
+0000125E                           238  
+0000125E                           239  *MOVE.W, MOVEA.W
+0000125E                           240  CODE0011
+0000125E  4EB9 00001BD4            241      JSR print_data
+00001264  4E75                     242      RTS
+00001266                           243  
+00001266                           244  *NOP, JSR, LEA, MOVEM, NOT, RTS
+00001266                           245  CODE0100
+00001266                           246  NOP_check
+00001266  3239 00001E6A            247      MOVE.W  curr_four_nibbles, D1
+0000126C  B27C 4E71                248      CMP.W   #$4E71, D1
+00001270  6600 000A                249      BNE RTS_check
+00001274  4EB9 00001B56            250      JSR print_NOP
+0000127A  4E75                     251      RTS
+0000127C                           252  
+0000127C                           253  RTS_check
+0000127C  3239 00001E6A            254      MOVE.W  curr_four_nibbles, D1
+00001282  B27C 4E75                255      CMP.W   #$4E75, D1
+00001286  6600 000A                256      BNE LEA_check
+0000128A  4EB9 00001B64            257      JSR print_RTS
+00001290  4E75                     258      RTS
+00001292                           259  
+00001292                           260  LEA_check
+00001292  3239 00001E6A            261      MOVE.W  curr_four_nibbles, D1
+00001298  4EB9 00001A78            262      JSR load_bit_triples
+0000129E  0241 01C0                263      ANDI.W  #$01C0, D1
+000012A2  EC49                     264      LSR.W   #6,D1
+000012A4  B27C 0007                265      CMP.W   #$7,D1
+000012A8  6600 00F4                266      BNE     NOT_check
+000012AC  1239 00001E74            267      MOVE.B  bits3to5, D1
+000012B2  B23C 0002                268      CMP.B   #2, D1
+000012B6  6700 0012                269      BEQ LEA_EA_010
+000012BA  B23C 0007                270      CMP.B   #7, D1
+000012BE  6700 0054                271      BEQ LEA_EA_111
+000012C2  4EB9 00001BD4            272      JSR print_data
+000012C8  4E75                     273      RTS
+000012CA                           274  LEA_EA_010
+000012CA  4EB9 00001B72            275      JSR print_LEA
+000012D0  4EB9 00001CF8            276      JSR print_open_paren
+000012D6  4EB9 00001CCE            277      JSR print_A
+000012DC  1239 00001E73            278      MOVE.B  bits0to2, D1
+000012E2  4EB9 00001B42            279      JSR hex_to_ascii
+000012E8  4EB9 00001C38            280      JSR print_char_of_D1
+000012EE  4EB9 00001D06            281      JSR print_close_paren
+000012F4  4EB9 00001CEA            282      JSR print_comma
+000012FA  4EB9 00001CCE            283      JSR print_A
+00001300  1239 00001E76            284      MOVE.B  bits9to11, D1
+00001306  4EB9 00001B42            285      JSR hex_to_ascii
+0000130C  4EB9 00001C38            286      JSR print_char_of_D1
+00001312  4E75                     287      RTS
+00001314                           288  LEA_EA_111
+00001314  1239 00001E73            289      MOVE.B  bits0to2, D1
+0000131A  B23C 0000                290      CMP.B   #0, D1
+0000131E  6700 0012                291      BEQ LEA_EA_111_W
+00001322  B23C 0001                292      CMP.B   #1, D1
+00001326  6700 0040                293      BEQ LEA_EA_111_L
+0000132A  4EB9 00001BD4            294      JSR print_data
+00001330  4E75                     295      RTS
+00001332                           296  LEA_EA_111_W
+00001332  4EB9 00001B72            297      JSR print_LEA
+00001338  4EB9 00001D30            298      JSR print_$
+0000133E  4EB8 11C2                299      JSR increment_by_word
+00001342  4EB9 00001BE8            300      JSR print_word_of_data
+00001348  4EB9 00001CEA            301      JSR print_comma
+0000134E  4EB9 00001CCE            302      JSR print_A
+00001354  1239 00001E76            303      MOVE.B  bits9to11, D1
+0000135A  4EB9 00001B42            304      JSR hex_to_ascii
+00001360  4EB9 00001C38            305      JSR print_char_of_D1
+00001366  4E75                     306      RTS
+00001368                           307  LEA_EA_111_L
+00001368  4EB9 00001B72            308      JSR print_LEA
+0000136E  4EB9 00001D30            309      JSR print_$
+00001374  4EB8 11C2                310      JSR increment_by_word
+00001378  4EB9 00001C2A            311      JSR print_longword_of_data
+0000137E  4EB9 00001CEA            312      JSR print_comma
+00001384  4EB9 00001CCE            313      JSR print_A
+0000138A  1239 00001E76            314      MOVE.B  bits9to11, D1
+00001390  4EB9 00001B42            315      JSR hex_to_ascii
+00001396  4EB9 00001C38            316      JSR print_char_of_D1
+0000139C  4E75                     317      RTS
+0000139E                           318  
+0000139E                           319  NOT_check
+0000139E  3239 00001E6A            320      MOVE.W  curr_four_nibbles, D1
+000013A4  4EB9 00001A78            321      JSR load_bit_triples 
+000013AA  E049                     322      LSR.W   #8,D1
+000013AC  B27C 0046                323      CMP.W   #$0046,D1
+000013B0  6600 017E                324      BNE     JSR_check
+000013B4  1239 00001E74            325      MOVE.B  bits3to5, D1
+000013BA  B23C 0007                326      CMP.B   #7, D1
+000013BE  6700 0006                327      BEQ NOT_absolute_check
+000013C2  6000 001C                328      BRA NOT_check_2
+000013C6                           329  NOT_absolute_check
+000013C6  1239 00001E73            330      MOVE.B  bits0to2, D1
+000013CC  B23C 0001                331      CMP.B   #1, D1
+000013D0  6E00 0006                332      BGT NOT_absolute_fail
+000013D4  6000 000A                333      BRA NOT_check_2
+000013D8                           334  NOT_absolute_fail
+000013D8  4EB9 00001BD4            335      JSR print_data
+000013DE  4E75                     336      RTS
+000013E0                           337  NOT_check_2
+000013E0  1239 00001E75            338      MOVE.B  bits6to8, D1
+000013E6  0201 0003                339      ANDI.B  #$3, D1
+000013EA  B23C 0001                340      CMP.B   #1, D1
+000013EE  6D00 0016                341      BLT print_NOTB
+000013F2  6700 0022                342      BEQ print_NOTW
+000013F6  B23C 0002                343      CMP.B   #2, D1
+000013FA  6700 002A                344      BEQ print_NOTL
+000013FE  4EB9 00001BD4            345      JSR print_data
+00001404  4E75                     346      RTS
+00001406                           347  print_NOTB
+00001406  4EB9 00001B80            348      JSR print_NOT
+0000140C  4EB9 00001D4C            349      JSR print_B
+00001412  6000 0022                350      BRA NOT_check_3
+00001416                           351  print_NOTW
+00001416  4EB9 00001B80            352      JSR print_NOT
+0000141C  4EB9 00001D5A            353      JSR print_W
+00001422  6000 0012                354      BRA NOT_check_3
+00001426                           355  print_NOTL
+00001426  4EB9 00001B80            356      JSR print_NOT
+0000142C  4EB9 00001D68            357      JSR print_L
+00001432  6000 0002                358      BRA NOT_check_3
+00001436                           359  NOT_check_3
+00001436  1239 00001E74            360      MOVE.B  bits3to5, D1
+0000143C  0281 00000007            361      ANDI.L  #%111, D1
+00001442  C2FC 0006                362      MULU    #6, D1
+00001446  45F9 00001452            363      LEA NOT_EA_table, A2
+0000144C  4EB2 1000                364      JSR 0(A2, D1)
+00001450  4E75                     365      RTS
+00001452                           366  NOT_EA_table
+00001452  4EF9 00001482            367      JMP NOT_EA_000
+00001458  4EF9 0000149C            368      JMP NOT_EA_001
+0000145E  4EF9 000014A4            369      JMP NOT_EA_010
+00001464  4EF9 000014CA            370      JMP NOT_EA_011
+0000146A  4EF9 000014D6            371      JMP NOT_EA_100
+00001470  4EF9 000014E2            372      JMP NOT_EA_101
+00001476  4EF9 000014EA            373      JMP NOT_EA_110
+0000147C  4EF9 000014F2            374      JMP NOT_EA_111
+00001482                           375  NOT_EA_000
+00001482  4EB9 00001CDC            376      JSR print_D
+00001488  1239 00001E73            377      MOVE.B  bits0to2, D1
+0000148E  4EB9 00001B42            378      JSR hex_to_ascii
+00001494  4EB9 00001C38            379      JSR print_char_of_D1
+0000149A  4E75                     380      RTS
+0000149C                           381  NOT_EA_001
+0000149C  4EB9 00001BD4            382      JSR print_data
+000014A2  4E75                     383      RTS
+000014A4                           384  NOT_EA_010
+000014A4  4EB9 00001CF8            385      JSR print_open_paren
+000014AA  4EB9 00001CCE            386      JSR print_A
+000014B0  1239 00001E73            387      MOVE.B  bits0to2, D1
+000014B6  4EB9 00001B42            388      JSR hex_to_ascii
+000014BC  4EB9 00001C38            389      JSR print_char_of_D1
+000014C2  4EB9 00001D06            390      JSR print_close_paren
+000014C8  4E75                     391      RTS
+000014CA                           392  NOT_EA_011
+000014CA  4EB8 14A4                393      JSR NOT_EA_010
+000014CE  4EB9 00001D22            394      JSR print_plus
+000014D4  4E75                     395      RTS
+000014D6                           396  NOT_EA_100
+000014D6  4EB9 00001D14            397      JSR print_minus
+000014DC  4EB8 14A4                398      JSR NOT_EA_010
+000014E0  4E75                     399      RTS
+000014E2                           400  NOT_EA_101
+000014E2  4EB9 00001BD4            401      JSR print_data
+000014E8  4E75                     402      RTS
+000014EA                           403  NOT_EA_110
+000014EA  4EB9 00001BD4            404      JSR print_data
+000014F0  4E75                     405      RTS
+000014F2                           406  NOT_EA_111
+000014F2  1239 00001E73            407      MOVE.B  bits0to2, D1
+000014F8  B23C 0001                408      CMP.B   #1, D1
+000014FC  6700 0020                409      BEQ NOT_EA_111_L
+00001500  6D00 000A                410      BLT NOT_EA_111_W
+00001504  4EB9 00001BD4            411      JSR print_data
+0000150A  4E75                     412      RTS
+0000150C                           413  NOT_EA_111_W
+0000150C  4EB9 00001D30            414      JSR print_$
+00001512  4EB8 11C2                415      JSR increment_by_word
+00001516  4EB9 00001BE8            416      JSR print_word_of_data
+0000151C  4E75                     417      RTS
+0000151E                           418  NOT_EA_111_L
+0000151E  4EB9 00001D30            419      JSR print_$
+00001524  4EB8 11C2                420      JSR increment_by_word
+00001528  4EB9 00001C2A            421      JSR print_longword_of_data
+0000152E  4E75                     422      RTS
+00001530                           423  
+00001530                           424  JSR_check
+00001530  3239 00001E6A            425      MOVE.W  curr_four_nibbles, D1
+00001536  4EB9 00001A78            426      JSR load_bit_triples
+0000153C  EC49                     427      LSR.W    #6,D1
+0000153E  B27C 013A                428      CMP.W   #$013A,D1
+00001542  6600 00C2                429      BNE CODE0100_fail *will change to BNE MOVEM_check at some point, MOVEM will branch to CODE0100_fail
+00001546  1239 00001E74            430      MOVE.B  bits3to5, D1
+0000154C  B23C 0007                431      CMP.B   #7, D1
+00001550  6700 0006                432      BEQ JSR_absolute_check
+00001554  6000 001C                433      BRA JSR_check_2
+00001558                           434  JSR_absolute_check
+00001558  1239 00001E73            435      MOVE.B  bits0to2, D1
+0000155E  B23C 0001                436      CMP.B   #1, D1
+00001562  6E00 0006                437      BGT JSR_absolute_fail
+00001566  6000 000A                438      BRA JSR_check_2
+0000156A                           439  JSR_absolute_fail
+0000156A  4EB9 00001BD4            440      JSR print_data
+00001570  4E75                     441      RTS
+00001572                           442  JSR_check_2
+00001572  1239 00001E74            443      MOVE.B  bits3to5, D1
+00001578  B23C 0002                444      CMP.B   #2, D1
+0000157C  6700 0012                445      BEQ JSR_EA_010
+00001580  B23C 0007                446      CMP.B   #7, D1
+00001584  6700 0036                447      BEQ JSR_EA_111
+00001588  4EB9 00001BD4            448      JSR print_data
+0000158E  4E75                     449      RTS
+00001590                           450  JSR_EA_010
+00001590  4EB9 00001B8E            451      JSR print_JSR
+00001596  4EB9 00001CF8            452      JSR print_open_paren
+0000159C  4EB9 00001CCE            453      JSR print_A
+000015A2  1239 00001E73            454      MOVE.B  bits0to2, D1
+000015A8  4EB9 00001B42            455      JSR hex_to_ascii
+000015AE  4EB9 00001C38            456      JSR print_char_of_D1
+000015B4  4EB9 00001D06            457      JSR print_close_paren
+000015BA  4E75                     458      RTS
+000015BC                           459  JSR_EA_111
+000015BC  1239 00001E73            460      MOVE.B  bits0to2, D1
+000015C2  B23C 0001                461      CMP.B   #1, D1
+000015C6  6700 0026                462      BEQ JSR_EA_111_L
+000015CA  6D00 000A                463      BLT JSR_EA_111_W
+000015CE  4EB9 00001BD4            464      JSR print_data
+000015D4  4E75                     465      RTS
+000015D6                           466  JSR_EA_111_W
+000015D6  4EB9 00001B8E            467      JSR print_JSR
+000015DC  4EB9 00001D30            468      JSR print_$
+000015E2  4EB8 11C2                469      JSR increment_by_word
+000015E6  4EB9 00001BE8            470      JSR print_word_of_data
+000015EC  4E75                     471      RTS
+000015EE                           472  JSR_EA_111_L
+000015EE  4EB9 00001B8E            473      JSR print_JSR
+000015F4  4EB9 00001D30            474      JSR print_$
+000015FA  4EB8 11C2                475      JSR increment_by_word
+000015FE  4EB9 00001C2A            476      JSR print_longword_of_data
+00001604  4E75                     477      RTS
+00001606                           478      
+00001606                           479  CODE0100_fail
+00001606  4EB9 00001BD4            480      JSR print_data
+0000160C  4E75                     481      RTS
+0000160E                           482  
+0000160E                           483  *ADDQ
+0000160E                           484  CODE0101
+0000160E  4EB9 00001BD4            485      JSR print_data
+00001614  4E75                     486      RTS
+00001616                           487  
+00001616                           488  *BRA, BGT, BLE, BEQ
+00001616                           489  CODE0110
+00001616  3239 00001E6A            490      MOVE.W  curr_four_nibbles,D1
+0000161C  E049                     491      LSR.W   #8,D1
+0000161E  0241 000F                492      ANDI.W  #$000F, D1
+00001622  B27C 0000                493      CMP.W   #0,D1    *Check if BRA
+00001626  6700 0022                494      BEQ     BRA_check
+0000162A  B27C 000E                495      CMP.W   #$E,D1   *Check if BGT
+0000162E  6700 00E6                496      BEQ     BGT_check
+00001632  B27C 000F                497      CMP.W   #$F,D1   *Check if BLE
+00001636  6700 01AA                498      BEQ     BLE_check
+0000163A  B27C 0007                499      CMP.W   #$7,D1   *Check if BEQ
+0000163E  6700 026E                500      BEQ     BEQ_check
+00001642  4EB9 00001BD4            501      JSR     print_data
+00001648  4E75                     502      RTS
+0000164A                           503      
+0000164A                           504  BRA_check
+0000164A  3239 00001E6A            505      MOVE.W  curr_four_nibbles, D1
+00001650  B23C 0000                506      CMP.B   #$00, D1
+00001654  6700 005C                507      BEQ BRA_16_bit
+00001658  B23C 00FF                508      CMP.B   #$FF, D1
+0000165C  6700 00A8                509      BEQ BRA_32_bit
+00001660                           510  BRA_8_bit
+00001660  2439 00001E64            511      MOVE.L  curr_loc, D2
+00001666  3639 00001E6A            512      MOVE.W  curr_four_nibbles, D3
+0000166C  0283 000000FF            513      ANDI.L  #$000000FF, D3
+00001672  D483                     514      ADD.L   D3, D2
+00001674  5482                     515      ADD.L   #2, D2
+00001676  23C2 00001E6E            516      MOVE.L  D2, abs_address
+0000167C  4EB9 00001B9C            517      JSR print_BRA
+00001682  4EB9 00001D3E            518      JSR print_S
+00001688  4EB9 00001D30            519      JSR print_$
+0000168E  E08A                     520      LSR.L   #8, D2
+00001690  E08A                     521      LSR.L   #8, D2
+00001692  33C2 00001E6A            522      MOVE.W  D2, curr_four_nibbles
+00001698  4EB9 00001BE8            523      JSR print_word_of_data
+0000169E  2439 00001E6E            524      MOVE.L  abs_address, D2
+000016A4  33C2 00001E6A            525      MOVE.W  D2, curr_four_nibbles
+000016AA  4EB9 00001BE8            526      JSR print_word_of_data
+000016B0  4E75                     527      RTS
+000016B2                           528  BRA_16_bit
+000016B2  4EB8 11C2                529      JSR increment_by_word
+000016B6  2439 00001E64            530      MOVE.L  curr_loc, D2
+000016BC  3639 00001E6A            531      MOVE.W  curr_four_nibbles, D3
+000016C2  0283 0000FFFF            532      ANDI.L  #$0000FFFF, D3
+000016C8  D483                     533      ADD.L   D3, D2
+000016CA  23C2 00001E6E            534      MOVE.L  D2, abs_address
+000016D0  4EB9 00001B9C            535      JSR print_BRA
+000016D6  4EB9 00001D5A            536      JSR print_W
+000016DC  4EB9 00001D30            537      JSR print_$
+000016E2  E08A                     538      LSR.L   #8, D2
+000016E4  E08A                     539      LSR.L   #8, D2
+000016E6  33C2 00001E6A            540      MOVE.W  D2, curr_four_nibbles
+000016EC  4EB9 00001BE8            541      JSR print_word_of_data
+000016F2  2439 00001E6E            542      MOVE.L  abs_address, D2
+000016F8  33C2 00001E6A            543      MOVE.W  D2, curr_four_nibbles
+000016FE  4EB9 00001BE8            544      JSR print_word_of_data
+00001704  4E75                     545      RTS
+00001706                           546  BRA_32_bit
+00001706  4EB8 11C2                547      JSR increment_by_word
+0000170A  4EB8 11C2                548      JSR increment_by_word
+0000170E  4EB9 00001BD4            549      JSR print_data not supported
+00001714  4E75                     550      RTS
+00001716                           551  
+00001716                           552  BGT_check
+00001716  3239 00001E6A            553      MOVE.W  curr_four_nibbles, D1
+0000171C  B23C 0000                554      CMP.B   #$00, D1
+00001720  6700 005C                555      BEQ BGT_16_bit
+00001724  B23C 00FF                556      CMP.B   #$FF, D1
+00001728  6700 00A8                557      BEQ BGT_32_bit
+0000172C                           558  BGT_8_bit
+0000172C  2439 00001E64            559      MOVE.L  curr_loc, D2
+00001732  3639 00001E6A            560      MOVE.W  curr_four_nibbles, D3
+00001738  0283 000000FF            561      ANDI.L  #$000000FF, D3
+0000173E  D483                     562      ADD.L   D3, D2
+00001740  5482                     563      ADD.L   #2, D2
+00001742  23C2 00001E6E            564      MOVE.L  D2, abs_address
+00001748  4EB9 00001BAA            565      JSR print_BGT
+0000174E  4EB9 00001D3E            566      JSR print_S
+00001754  4EB9 00001D30            567      JSR print_$
+0000175A  E08A                     568      LSR.L   #8, D2
+0000175C  E08A                     569      LSR.L   #8, D2
+0000175E  33C2 00001E6A            570      MOVE.W  D2, curr_four_nibbles
+00001764  4EB9 00001BE8            571      JSR print_word_of_data
+0000176A  2439 00001E6E            572      MOVE.L  abs_address, D2
+00001770  33C2 00001E6A            573      MOVE.W  D2, curr_four_nibbles
+00001776  4EB9 00001BE8            574      JSR print_word_of_data
+0000177C  4E75                     575      RTS
+0000177E                           576  BGT_16_bit
+0000177E  4EB8 11C2                577      JSR increment_by_word
+00001782  2439 00001E64            578      MOVE.L  curr_loc, D2
+00001788  3639 00001E6A            579      MOVE.W  curr_four_nibbles, D3
+0000178E  0283 0000FFFF            580      ANDI.L  #$0000FFFF, D3
+00001794  D483                     581      ADD.L   D3, D2
+00001796  23C2 00001E6E            582      MOVE.L  D2, abs_address
+0000179C  4EB9 00001BAA            583      JSR print_BGT
+000017A2  4EB9 00001D5A            584      JSR print_W
+000017A8  4EB9 00001D30            585      JSR print_$
+000017AE  E08A                     586      LSR.L   #8, D2
+000017B0  E08A                     587      LSR.L   #8, D2
+000017B2  33C2 00001E6A            588      MOVE.W  D2, curr_four_nibbles
+000017B8  4EB9 00001BE8            589      JSR print_word_of_data
+000017BE  2439 00001E6E            590      MOVE.L  abs_address, D2
+000017C4  33C2 00001E6A            591      MOVE.W  D2, curr_four_nibbles
+000017CA  4EB9 00001BE8            592      JSR print_word_of_data
+000017D0  4E75                     593      RTS
+000017D2                           594  BGT_32_bit
+000017D2  4EB8 11C2                595      JSR increment_by_word
+000017D6  4EB8 11C2                596      JSR increment_by_word
+000017DA  4EB9 00001BD4            597      JSR print_data not supported
+000017E0  4E75                     598      RTS
+000017E2                           599  
+000017E2                           600  BLE_check
+000017E2  3239 00001E6A            601      MOVE.W  curr_four_nibbles, D1
+000017E8  B23C 0000                602      CMP.B   #$00, D1
+000017EC  6700 005C                603      BEQ BLE_16_bit
+000017F0  B23C 00FF                604      CMP.B   #$FF, D1
+000017F4  6700 00A8                605      BEQ BLE_32_bit
+000017F8                           606  BLE_8_bit
+000017F8  2439 00001E64            607      MOVE.L  curr_loc, D2
+000017FE  3639 00001E6A            608      MOVE.W  curr_four_nibbles, D3
+00001804  0283 000000FF            609      ANDI.L  #$000000FF, D3
+0000180A  D483                     610      ADD.L   D3, D2
+0000180C  5482                     611      ADD.L   #2, D2
+0000180E  23C2 00001E6E            612      MOVE.L  D2, abs_address
+00001814  4EB9 00001BB8            613      JSR print_BLE
+0000181A  4EB9 00001D3E            614      JSR print_S
+00001820  4EB9 00001D30            615      JSR print_$
+00001826  E08A                     616      LSR.L   #8, D2
+00001828  E08A                     617      LSR.L   #8, D2
+0000182A  33C2 00001E6A            618      MOVE.W  D2, curr_four_nibbles
+00001830  4EB9 00001BE8            619      JSR print_word_of_data
+00001836  2439 00001E6E            620      MOVE.L  abs_address, D2
+0000183C  33C2 00001E6A            621      MOVE.W  D2, curr_four_nibbles
+00001842  4EB9 00001BE8            622      JSR print_word_of_data
+00001848  4E75                     623      RTS
+0000184A                           624  BLE_16_bit
+0000184A  4EB8 11C2                625      JSR increment_by_word
+0000184E  2439 00001E64            626      MOVE.L  curr_loc, D2
+00001854  3639 00001E6A            627      MOVE.W  curr_four_nibbles, D3
+0000185A  0283 0000FFFF            628      ANDI.L  #$0000FFFF, D3
+00001860  D483                     629      ADD.L   D3, D2
+00001862  23C2 00001E6E            630      MOVE.L  D2, abs_address
+00001868  4EB9 00001BB8            631      JSR print_BLE
+0000186E  4EB9 00001D5A            632      JSR print_W
+00001874  4EB9 00001D30            633      JSR print_$
+0000187A  E08A                     634      LSR.L   #8, D2
+0000187C  E08A                     635      LSR.L   #8, D2
+0000187E  33C2 00001E6A            636      MOVE.W  D2, curr_four_nibbles
+00001884  4EB9 00001BE8            637      JSR print_word_of_data
+0000188A  2439 00001E6E            638      MOVE.L  abs_address, D2
+00001890  33C2 00001E6A            639      MOVE.W  D2, curr_four_nibbles
+00001896  4EB9 00001BE8            640      JSR print_word_of_data
+0000189C  4E75                     641      RTS
+0000189E                           642  BLE_32_bit
+0000189E  4EB8 11C2                643      JSR increment_by_word
+000018A2  4EB8 11C2                644      JSR increment_by_word
+000018A6  4EB9 00001BD4            645      JSR print_data not supported
+000018AC  4E75                     646      RTS
+000018AE                           647  
+000018AE                           648  BEQ_check
+000018AE  3239 00001E6A            649      MOVE.W  curr_four_nibbles, D1
+000018B4  B23C 0000                650      CMP.B   #$00, D1
+000018B8  6700 005C                651      BEQ BEQ_16_bit
+000018BC  B23C 00FF                652      CMP.B   #$FF, D1
+000018C0  6700 00A8                653      BEQ BEQ_32_bit
+000018C4                           654  BEQ_8_bit
+000018C4  2439 00001E64            655      MOVE.L  curr_loc, D2
+000018CA  3639 00001E6A            656      MOVE.W  curr_four_nibbles, D3
+000018D0  0283 000000FF            657      ANDI.L  #$000000FF, D3
+000018D6  D483                     658      ADD.L   D3, D2
+000018D8  5482                     659      ADD.L   #2, D2
+000018DA  23C2 00001E6E            660      MOVE.L  D2, abs_address
+000018E0  4EB9 00001BC6            661      JSR print_BEQ
+000018E6  4EB9 00001D3E            662      JSR print_S
+000018EC  4EB9 00001D30            663      JSR print_$
+000018F2  E08A                     664      LSR.L   #8, D2
+000018F4  E08A                     665      LSR.L   #8, D2
+000018F6  33C2 00001E6A            666      MOVE.W  D2, curr_four_nibbles
+000018FC  4EB9 00001BE8            667      JSR print_word_of_data
+00001902  2439 00001E6E            668      MOVE.L  abs_address, D2
+00001908  33C2 00001E6A            669      MOVE.W  D2, curr_four_nibbles
+0000190E  4EB9 00001BE8            670      JSR print_word_of_data
+00001914  4E75                     671      RTS
+00001916                           672  BEQ_16_bit
+00001916  4EB8 11C2                673      JSR increment_by_word
+0000191A  2439 00001E64            674      MOVE.L  curr_loc, D2
+00001920  3639 00001E6A            675      MOVE.W  curr_four_nibbles, D3
+00001926  0283 0000FFFF            676      ANDI.L  #$0000FFFF, D3
+0000192C  D483                     677      ADD.L   D3, D2
+0000192E  23C2 00001E6E            678      MOVE.L  D2, abs_address
+00001934  4EB9 00001BC6            679      JSR print_BEQ
+0000193A  4EB9 00001D5A            680      JSR print_W
+00001940  4EB9 00001D30            681      JSR print_$
+00001946  E08A                     682      LSR.L   #8, D2
+00001948  E08A                     683      LSR.L   #8, D2
+0000194A  33C2 00001E6A            684      MOVE.W  D2, curr_four_nibbles
+00001950  4EB9 00001BE8            685      JSR print_word_of_data
+00001956  2439 00001E6E            686      MOVE.L  abs_address, D2
+0000195C  33C2 00001E6A            687      MOVE.W  D2, curr_four_nibbles
+00001962  4EB9 00001BE8            688      JSR print_word_of_data
+00001968  4E75                     689      RTS
+0000196A                           690  BEQ_32_bit
+0000196A  4EB8 11C2                691      JSR increment_by_word
+0000196E  4EB8 11C2                692      JSR increment_by_word
+00001972  4EB9 00001BD4            693      JSR print_data not supported
+00001978  4E75                     694      RTS
+0000197A                           695  
+0000197A                           696  *MOVEQ
+0000197A                           697  CODE0111
+0000197A  4EB9 00001BD4            698      JSR print_data
+00001980  4E75                     699      RTS
+00001982                           700  
+00001982                           701  *OR
+00001982                           702  CODE1000
+00001982  4EB9 00001BD4            703      JSR print_data
+00001988  4E75                     704      RTS
+0000198A                           705  
+0000198A                           706  *SUB
+0000198A                           707  CODE1001
+0000198A  4EB9 00001BD4            708      JSR print_data
+00001990  4E75                     709      RTS
+00001992                           710  
+00001992                           711  *not supported
+00001992                           712  CODE1010
+00001992  4EB9 00001BD4            713      JSR print_data
+00001998  4E75                     714      RTS
+0000199A                           715  
+0000199A                           716  *not supported
+0000199A                           717  CODE1011
+0000199A  4EB9 00001BD4            718      JSR print_data
+000019A0  4E75                     719      RTS
+000019A2                           720  
+000019A2                           721  *AND
+000019A2                           722  CODE1100
+000019A2  4EB9 00001BD4            723      JSR print_data
+000019A8  4E75                     724      RTS
+000019AA                           725  
+000019AA                           726  *ADD, ADDA
+000019AA                           727  CODE1101
+000019AA  4EB9 00001BD4            728      JSR print_data
+000019B0  4E75                     729      RTS
+000019B2                           730  
+000019B2                           731  *LSR, LSL, ASR, ASL, ROR, ROL
+000019B2                           732  CODE1110
+000019B2  2239 00001E6A            733      MOVE.L  curr_four_nibbles,D1    
+000019B8  0281 000000C0            734      ANDI.L  #%0000000011000000,D1   *get shift size
+000019BE  13C1 00001E78            735      MOVE.B  D1,shiftsize
+000019C4  2239 00001E6A            736      MOVE.L  curr_four_nibbles,D1
+000019CA  0281 0000000C            737      ANDI.L  #%0000000000001100,D1   *get what kind of shift/rotate
+000019D0  13C1 00001E79            738      MOVE.B  D1,shiftID
+000019D6  2239 00001E6A            739      MOVE.L  curr_four_nibbles,D1
+000019DC  0281 00000010            740      ANDI.L  #%0000000000010000,D1   *get I/R
+000019E2  13C1 00001E7B            741      MOVE.B  D1,shiftIR
+000019E8  2239 00001E6A            742      MOVE.L  curr_four_nibbles,D1
+000019EE  0281 00000100            743      ANDI.L  #%0000000100000000,D1
+000019F4  13C1 00001E7A            744      MOVE.B  D1,shiftDir             *get shift direction
+000019FA  2239 00001E6A            745      MOVE.L  curr_four_nibbles,D1
+00001A00  0281 00000E00            746      ANDI.L  #%0000111000000000,D1   *get count/register 
+00001A06  13C1 00001E7D            747      MOVE.B  D1,shiftCount
+00001A0C  2239 00001E6A            748      MOVE.L  curr_four_nibbles,D1
+00001A12  0281 00000007            749      ANDI.L  #%0000000000000111,D1
+00001A18  13C1 00001E7C            750      MOVE.B  D1,shiftReg             *get register
+00001A1E  4E75                     751      RTS
+00001A20                           752      
+00001A20                           753      
+00001A20                           754  
+00001A20                           755      
+00001A20                           756  *not supported
+00001A20                           757  CODE1111
+00001A20  4EB9 00001BD4            758      JSR print_data
+00001A26  4E75                     759      RTS
+00001A28                           760  
+00001A28                           761  
+00001A28                           762  *put any needed subroutines/jump tables for size, register, EA mode below here
+00001A28                           763  
+00001A28                           764  get_bits_0_to_2
+00001A28  3239 00001E6A            765      MOVE.W  curr_four_nibbles, D1
+00001A2E  0241 0007                766      ANDI.W  #$0007, D1
+00001A32  13C1 00001E73            767      MOVE.B  D1, bits0to2
+00001A38  4E75                     768      RTS
+00001A3A                           769  
+00001A3A                           770  get_bits_3_to_5
+00001A3A  3239 00001E6A            771      MOVE.W  curr_four_nibbles, D1
+00001A40  0241 0038                772      ANDI.W  #$0038, D1
+00001A44  E649                     773      LSR.W   #3, D1
+00001A46  13C1 00001E74            774      MOVE.B  D1, bits3to5
+00001A4C  4E75                     775      RTS
+00001A4E                           776      
+00001A4E                           777  get_bits_6_to_8
+00001A4E  3239 00001E6A            778      MOVE.W  curr_four_nibbles, D1
+00001A54  0241 01C0                779      ANDI.W  #$01C0, D1
+00001A58  EC49                     780      LSR.W   #6, D1
+00001A5A  13C1 00001E75            781      MOVE.B  D1, bits6to8
+00001A60  4E75                     782      RTS
+00001A62                           783  
+00001A62                           784  get_bits_9_to_11
+00001A62  3239 00001E6A            785      MOVE.W  curr_four_nibbles, D1
+00001A68  0241 0E00                786      ANDI.W  #$0E00, D1
+00001A6C  E049                     787      LSR.W   #8, D1
+00001A6E  E249                     788      LSR.W   #1, D1
+00001A70  13C1 00001E76            789      MOVE.B  D1, bits9to11
+00001A76  4E75                     790      RTS
+00001A78                           791      
+00001A78                           792  load_bit_triples
+00001A78  4EB8 1A28                793      JSR get_bits_0_to_2
+00001A7C  4EB8 1A3A                794      JSR get_bits_3_to_5
+00001A80  4EB8 1A4E                795      JSR get_bits_6_to_8
+00001A84  4EB8 1A62                796      JSR get_bits_9_to_11
+00001A88  3239 00001E6A            797      MOVE.W  curr_four_nibbles, D1
+00001A8E  4E75                     798      RTS
+00001A90                           799  
+00001A90                           800  ***
+00001A90                           801  *beginning of print memory specific subroutines
+00001A90                           802  ***
+00001A90                           803  print_memory_location
+00001A90  2039 00001E64            804      MOVE.L  curr_loc, D0    *load current address
+00001A96  E088                     805      LSR.L   #8, D0
+00001A98  E088                     806      LSR.L   #8, D0
+00001A9A  33C0 00001E68            807      MOVE.W  D0, curr_word
+00001AA0  4EB9 00001AC0            808      JSR print_word_of_memloc
+00001AA6  2039 00001E64            809      MOVE.L  curr_loc, D0
+00001AAC  33C0 00001E68            810      MOVE.W  D0, curr_word
+00001AB2  4EB9 00001AC0            811      JSR print_word_of_memloc
+00001AB8  4EB9 00001C42            812      JSR print_space
+00001ABE  4E75                     813      RTS
+00001AC0                           814      
+00001AC0                           815  print_word_of_memloc
+00001AC0  4EB9 00001B0A            816      JSR isolate_first_nibble
+00001AC6  4EB9 00001B42            817      JSR hex_to_ascii
+00001ACC  4EB9 00001C38            818      JSR print_char_of_D1
+00001AD2  4EB9 00001B1A            819      JSR isolate_second_nibble
+00001AD8  4EB9 00001B42            820      JSR hex_to_ascii
+00001ADE  4EB9 00001C38            821      JSR print_char_of_D1
+00001AE4  4EB9 00001B28            822      JSR isolate_third_nibble
+00001AEA  4EB9 00001B42            823      JSR hex_to_ascii
+00001AF0  4EB9 00001C38            824      JSR print_char_of_D1
+00001AF6  4EB9 00001B36            825      JSR isolate_fourth_nibble
+00001AFC  4EB9 00001B42            826      JSR hex_to_ascii
+00001B02  4EB9 00001C38            827      JSR print_char_of_D1
+00001B08  4E75                     828      RTS
+00001B0A                           829      
+00001B0A                           830  *isolate subroutines are for printing memory location
+00001B0A                           831  isolate_first_nibble
+00001B0A  3239 00001E68            832      MOVE.W  curr_word, D1
+00001B10  E049                     833      LSR.W   #8, D1
+00001B12  E849                     834      LSR.W   #4, D1
+00001B14  0241 000F                835      ANDI.W  #$000F, D1
+00001B18  4E75                     836      RTS
+00001B1A                           837  
+00001B1A                           838  isolate_second_nibble
+00001B1A  3239 00001E68            839      MOVE.W  curr_word, D1
+00001B20  E049                     840      LSR.W   #8, D1
+00001B22  0241 000F                841      ANDI.W  #$000F, D1
+00001B26  4E75                     842      RTS
+00001B28                           843  
+00001B28                           844  isolate_third_nibble
+00001B28  3239 00001E68            845      MOVE.W  curr_word, D1
+00001B2E  E849                     846      LSR.W   #4, D1
+00001B30  0241 000F                847      ANDI.W  #$000F, D1
+00001B34  4E75                     848      RTS
+00001B36                           849  
+00001B36                           850  isolate_fourth_nibble
+00001B36  3239 00001E68            851      MOVE.W  curr_word, D1
+00001B3C  0241 000F                852      ANDI.W  #$000F, D1
+00001B40  4E75                     853      RTS
+00001B42                           854      
+00001B42                           855  *subroutine for hex to ascii
+00001B42                           856  hex_to_ascii
+00001B42  0C01 0009                857      CMPI.B  #$9,D1
+00001B46  6E00 0008                858      BGT     letter_to_ascii
+00001B4A                           859  num_to_ascii
+00001B4A  0601 0030                860      ADDI.B   #$30,D1
+00001B4E  4E75                     861      RTS
+00001B50                           862  letter_to_ascii
+00001B50  0601 0037                863      ADDI.B   #$37,D1
+00001B54  4E75                     864      RTS
+00001B56                           865      
+00001B56                           866  ***
+00001B56                           867  *end of print memory specific subroutines
+00001B56                           868  ***
+00001B56                           869  
+00001B56                           870  ***
+00001B56                           871  *beginning of printing subroutines
+00001B56                           872  ***
+00001B56                           873  
+00001B56                           874  print_NOP
+00001B56  103C 000E                875      MOVE.B  #14, D0
+00001B5A  43F9 00001E0E            876      LEA printNOP, A1
+00001B60  4E4F                     877      TRAP    #15
+00001B62  4E75                     878      RTS
+00001B64                           879  
+00001B64                           880  print_RTS
+00001B64  103C 000E                881      MOVE.B  #14, D0
+00001B68  43F9 00001E12            882      LEA printRTS, A1
+00001B6E  4E4F                     883      TRAP    #15
+00001B70  4E75                     884      RTS
+00001B72                           885  
+00001B72                           886  print_LEA
+00001B72  103C 000E                887      MOVE.B  #14, D0
+00001B76  43F9 00001E03            888      LEA     printLEA, A1
+00001B7C  4E4F                     889      TRAP    #15
+00001B7E  4E75                     890      RTS
+00001B80                           891      
+00001B80                           892  print_NOT
+00001B80  103C 000E                893      MOVE.B  #14, D0
+00001B84  43F9 00001DFF            894      LEA printNOT, A1
+00001B8A  4E4F                     895      TRAP    #15
+00001B8C  4E75                     896      RTS
+00001B8E                           897      
+00001B8E                           898  print_JSR
+00001B8E  103C 000E                899      MOVE.B  #14, D0
+00001B92  43F9 00001DFA            900      LEA printJSR, A1
+00001B98  4E4F                     901      TRAP    #15
+00001B9A  4E75                     902      RTS
+00001B9C                           903      
+00001B9C                           904  print_BRA
+00001B9C  103C 000E                905      MOVE.B  #14, D0
+00001BA0  43F9 00001E16            906      LEA printBRA, A1
+00001BA6  4E4F                     907      TRAP    #15
+00001BA8  4E75                     908      RTS
+00001BAA                           909      
+00001BAA                           910  print_BGT
+00001BAA  103C 000E                911      MOVE.B  #14, D0
+00001BAE  43F9 00001E1A            912      LEA printBGT, A1
+00001BB4  4E4F                     913      TRAP    #15
+00001BB6  4E75                     914      RTS
+00001BB8                           915  
+00001BB8                           916  print_BLE
+00001BB8  103C 000E                917      MOVE.B  #14, D0
+00001BBC  43F9 00001E1E            918      LEA printBLE, A1
+00001BC2  4E4F                     919      TRAP    #15
+00001BC4  4E75                     920      RTS
+00001BC6                           921  
+00001BC6                           922  print_BEQ
+00001BC6  103C 000E                923      MOVE.B  #14, D0
+00001BCA  43F9 00001E22            924      LEA printBEQ, A1
+00001BD0  4E4F                     925      TRAP    #15
+00001BD2  4E75                     926      RTS
+00001BD4                           927  
+00001BD4                           928  *print data if cannot decode
+00001BD4                           929  print_data
+00001BD4  43F9 00001E08            930      LEA printData, A1
+00001BDA  103C 000E                931      MOVE.B  #14, D0
+00001BDE  4E4F                     932      TRAP    #15
+00001BE0  4EB9 00001BE8            933      JSR print_word_of_data
+00001BE6  4E75                     934      RTS
+00001BE8                           935      
+00001BE8                           936  print_word_of_data
+00001BE8  4EB9 00001D76            937      JSR get_first_nibble
+00001BEE  4EB8 1B42                938      JSR hex_to_ascii
+00001BF2  4EB9 00001C38            939      JSR print_char_of_D1
+00001BF8  4EB9 00001D86            940      JSR get_second_nibble
+00001BFE  4EB8 1B42                941      JSR hex_to_ascii
+00001C02  4EB9 00001C38            942      JSR print_char_of_D1
+00001C08  4EB9 00001D94            943      JSR get_third_nibble
+00001C0E  4EB8 1B42                944      JSR hex_to_ascii
+00001C12  4EB9 00001C38            945      JSR print_char_of_D1
+00001C18  4EB9 00001DA2            946      JSR get_fourth_nibble
+00001C1E  4EB8 1B42                947      JSR hex_to_ascii
+00001C22  4EB9 00001C38            948      JSR print_char_of_D1
+00001C28  4E75                     949      RTS
+00001C2A                           950  
+00001C2A                           951  print_longword_of_data
+00001C2A  4EB8 1BE8                952      JSR print_word_of_data
+00001C2E  4EB8 11C2                953      JSR increment_by_word
+00001C32  4EB8 1BE8                954      JSR print_word_of_data
+00001C36  4E75                     955      RTS
+00001C38                           956  
+00001C38                           957  *subroutine for trap task 14    
+00001C38                           958  print_char_of_D1
+00001C38  4280                     959      CLR.L   D0
+00001C3A  103C 0006                960      MOVE.B      #6,D0
+00001C3E  4E4F                     961      TRAP        #15
+00001C40  4E75                     962      RTS
+00001C42                           963      
+00001C42                           964  *subroutine to print a space    
+00001C42                           965  print_space
+00001C42  43F9 00001FC3            966      LEA printSpace, A1
+00001C48  103C 000E                967      MOVE.B  #14, D0
+00001C4C  4E4F                     968      TRAP    #15
+00001C4E  4E75                     969      RTS
+00001C50                           970      
+00001C50                           971  *subroutine to print a line
+00001C50                           972  print_line
+00001C50  43F9 00001FC2            973      LEA newLine, A1
+00001C56  103C 000D                974      MOVE.B  #13, D0
+00001C5A  4E4F                     975      TRAP    #15
+00001C5C  4E75                     976      RTS
+00001C5E                           977      
+00001C5E                           978  print_0
+00001C5E  43F9 00001E49            979      LEA print0, A1
+00001C64  103C 000E                980      MOVE.B  #14, D0
+00001C68  4E4F                     981      TRAP    #15
+00001C6A  4E75                     982      RTS
+00001C6C                           983      
+00001C6C                           984  print_1
+00001C6C  43F9 00001E4B            985      LEA print1, A1
+00001C72  103C 000E                986      MOVE.B  #14, D0
+00001C76  4E4F                     987      TRAP    #15
+00001C78  4E75                     988      RTS
+00001C7A                           989  
+00001C7A                           990  print_2
+00001C7A  43F9 00001E4D            991      LEA print2, A1
+00001C80  103C 000E                992      MOVE.B  #14, D0
+00001C84  4E4F                     993      TRAP    #15
+00001C86  4E75                     994      RTS
+00001C88                           995  
+00001C88                           996  print_3
+00001C88  43F9 00001E4F            997      LEA print3, A1
+00001C8E  103C 000E                998      MOVE.B  #14, D0
+00001C92  4E4F                     999      TRAP    #15
+00001C94  4E75                    1000      RTS
+00001C96                          1001  
+00001C96                          1002  print_4
+00001C96  43F9 00001E51           1003      LEA print4, A1
+00001C9C  103C 000E               1004      MOVE.B  #14, D0
+00001CA0  4E4F                    1005      TRAP    #15
+00001CA2  4E75                    1006      RTS
+00001CA4                          1007  
+00001CA4                          1008  print_5
+00001CA4  43F9 00001E53           1009      LEA print5, A1
+00001CAA  103C 000E               1010      MOVE.B  #14, D0
+00001CAE  4E4F                    1011      TRAP    #15
+00001CB0  4E75                    1012      RTS
+00001CB2                          1013  
+00001CB2                          1014  print_6
+00001CB2  43F9 00001E55           1015      LEA print6, A1
+00001CB8  103C 000E               1016      MOVE.B  #14, D0
+00001CBC  4E4F                    1017      TRAP    #15
+00001CBE  4E75                    1018      RTS
+00001CC0                          1019  
+00001CC0                          1020  print_7
+00001CC0  43F9 00001E57           1021      LEA print7, A1
+00001CC6  103C 000E               1022      MOVE.B  #14, D0
+00001CCA  4E4F                    1023      TRAP    #15
+00001CCC  4E75                    1024      RTS
+00001CCE                          1025  
+00001CCE                          1026  print_A
+00001CCE  43F9 00001E47           1027      LEA printA, A1
+00001CD4  103C 000E               1028      MOVE.B  #14, D0
+00001CD8  4E4F                    1029      TRAP    #15
+00001CDA  4E75                    1030      RTS
+00001CDC                          1031  
+00001CDC                          1032  print_D
+00001CDC  43F9 00001E45           1033      LEA printD, A1
+00001CE2  103C 000E               1034      MOVE.B  #14, D0
+00001CE6  4E4F                    1035      TRAP    #15
+00001CE8  4E75                    1036      RTS
+00001CEA                          1037      
+00001CEA                          1038  print_comma
+00001CEA  43F9 00001E3F           1039      LEA printComma, A1
+00001CF0  103C 000E               1040      MOVE.B  #14, D0
+00001CF4  4E4F                    1041      TRAP    #15
+00001CF6  4E75                    1042      RTS
+00001CF8                          1043      
+00001CF8                          1044  print_open_paren
+00001CF8  43F9 00001E41           1045      LEA printOpenParen, A1
+00001CFE  103C 000E               1046      MOVE.B  #14, D0
+00001D02  4E4F                    1047      TRAP    #15
+00001D04  4E75                    1048      RTS
+00001D06                          1049  
+00001D06                          1050  print_close_paren
+00001D06  43F9 00001E43           1051      LEA printCloseParen, A1
+00001D0C  103C 000E               1052      MOVE.B  #14, D0
+00001D10  4E4F                    1053      TRAP    #15
+00001D12  4E75                    1054      RTS
+00001D14                          1055      
+00001D14                          1056  print_minus
+00001D14  43F9 00001E3B           1057      LEA printMinus, A1
+00001D1A  103C 000E               1058      MOVE.B  #14, D0
+00001D1E  4E4F                    1059      TRAP    #15
+00001D20  4E75                    1060      RTS
+00001D22                          1061  
+00001D22                          1062  print_plus
+00001D22  43F9 00001E3D           1063      LEA printPlus, A1
+00001D28  103C 000E               1064      MOVE.B  #14, D0
+00001D2C  4E4F                    1065      TRAP    #15
+00001D2E  4E75                    1066      RTS
+00001D30                          1067      
+00001D30                          1068  print_$
+00001D30  43F9 00001E59           1069      LEA print$, A1
+00001D36  103C 000E               1070      MOVE.B  #14, D0
+00001D3A  4E4F                    1071      TRAP    #15
+00001D3C  4E75                    1072      RTS
+00001D3E                          1073  
+00001D3E                          1074  print_S
+00001D3E  43F9 00001E2B           1075      LEA printS, A1
+00001D44  103C 000E               1076      MOVE.B  #14, D0
+00001D48  4E4F                    1077      TRAP    #15
+00001D4A  4E75                    1078      RTS
+00001D4C                          1079  
+00001D4C                          1080  print_B
+00001D4C  43F9 00001E2F           1081      LEA printB, A1
+00001D52  103C 000E               1082      MOVE.B  #14, D0
+00001D56  4E4F                    1083      TRAP    #15
+00001D58  4E75                    1084      RTS
+00001D5A                          1085  
+00001D5A                          1086  print_W
+00001D5A  43F9 00001E33           1087      LEA printW, A1
+00001D60  103C 000E               1088      MOVE.B  #14, D0
+00001D64  4E4F                    1089      TRAP    #15
+00001D66  4E75                    1090      RTS
+00001D68                          1091  
+00001D68                          1092  print_L
+00001D68  43F9 00001E37           1093      LEA printL, A1
+00001D6E  103C 000E               1094      MOVE.B  #14, D0
+00001D72  4E4F                    1095      TRAP    #15
+00001D74  4E75                    1096      RTS
+00001D76                          1097      
+00001D76                          1098  ***
+00001D76                          1099  *end of printing subroutines
+00001D76                          1100  ***
+00001D76                          1101      
+00001D76                          1102  ***
+00001D76                          1103  *beginning of miscellaneous subroutines
+00001D76                          1104  ***
+00001D76                          1105      
+00001D76                          1106  *get subroutines are for getting data in memory
+00001D76                          1107  get_first_nibble
+00001D76  3239 00001E6A           1108      MOVE.W  curr_four_nibbles, D1
+00001D7C  E049                    1109      LSR.W   #8, D1
+00001D7E  E849                    1110      LSR.W   #4, D1
+00001D80  0241 000F               1111      ANDI.W  #$000F, D1
+00001D84  4E75                    1112      RTS
+00001D86                          1113  
+00001D86                          1114  get_second_nibble
+00001D86  3239 00001E6A           1115      MOVE.W  curr_four_nibbles, D1
+00001D8C  E049                    1116      LSR.W   #8, D1
+00001D8E  0241 000F               1117      ANDI.W  #$000F, D1
+00001D92  4E75                    1118      RTS
+00001D94                          1119  
+00001D94                          1120  get_third_nibble
+00001D94  3239 00001E6A           1121      MOVE.W  curr_four_nibbles, D1
+00001D9A  E849                    1122      LSR.W   #4, D1
+00001D9C  0241 000F               1123      ANDI.W  #$000F, D1
+00001DA0  4E75                    1124      RTS
+00001DA2                          1125  
+00001DA2                          1126  get_fourth_nibble
+00001DA2  3239 00001E6A           1127      MOVE.W  curr_four_nibbles, D1
+00001DA8  0241 000F               1128      ANDI.W  #$000F, D1
+00001DAC  4E75                    1129      RTS
+00001DAE                          1130  
+00001DAE                          1131  
+00001DAE                          1132  *clear address registers
+00001DAE                          1133  clr_addr_regs
+00001DAE  207C 00000000           1134      MOVE.L  #0,A0
+00001DB4  227C 00000000           1135      MOVE.L  #0,A1
+00001DBA  247C 00000000           1136      MOVE.L  #0,A2
+00001DC0  267C 00000000           1137      MOVE.L  #0,A3
+00001DC6  287C 00000000           1138      MOVE.L  #0,A4
+00001DCC  2A7C 00000000           1139      MOVE.L  #0,A5
+00001DD2  2C7C 00000000           1140      MOVE.L  #0,A6
+00001DD8  4E75                    1141      RTS
+00001DDA                          1142  
+00001DDA                          1143  *clear data registers
+00001DDA                          1144  clr_data_regs
+00001DDA  4280                    1145      CLR.L   D0
+00001DDC  4281                    1146      CLR.L   D1
+00001DDE  4282                    1147      CLR.L   D2
+00001DE0  4283                    1148      CLR.L   D3
+00001DE2  4284                    1149      CLR.L   D4
+00001DE4  4285                    1150      CLR.L   D5
+00001DE6  4286                    1151      CLR.L   D6
+00001DE8  4287                    1152      CLR.L   D7
+00001DEA  4E75                    1153      RTS
+00001DEC                          1154      
+00001DEC                          1155  *clear all registers
+00001DEC                          1156  clr_all_regs
+00001DEC  4EB8 1DAE               1157      JSR clr_addr_regs
+00001DF0  4EB8 1DDA               1158      JSR clr_data_regs
+00001DF4  4E75                    1159      RTS
+00001DF6                          1160      
+00001DF6                          1161  ***
+00001DF6                          1162  *end of miscellaneous subroutines
+00001DF6                          1163  ***
+00001DF6                          1164      
+00001DF6                          1165  done
+00001DF6  FFFF FFFF               1166      SIMHALT
+00001DFA                          1167  
+00001DFA                          1168  *CR, LF, user input
+00001DFA  =0000000D               1169  CR  EQU $0D
+00001DFA  =0000000A               1170  LF  EQU $0A
+00001DFA  =00000500               1171  input   EQU $500
+00001DFA                          1172  
+00001DFA                          1173  * Put variables and constants here
+00001DFA                          1174  *****OPCODE_STRING*****
+00001DFA= 4A 53 52 20 00          1175  printJSR    DC.B    'JSR ',0
+00001DFF= 4E 4F 54 00             1176  printNOT    DC.B    'NOT',0
+00001E03= 4C 45 41 20 00          1177  printLEA    DC.B    'LEA ',0
+00001E08= 44 41 54 41 20 00       1178  printDATA   DC.B    'DATA ',0
+00001E0E= 4E 4F 50 00             1179  printNOP    DC.B    'NOP',0
+00001E12= 52 54 53 00             1180  printRTS    DC.B    'RTS',0
+00001E16= 42 52 41 00             1181  printBRA    DC.B    'BRA',0
+00001E1A= 42 47 54 00             1182  printBGT    DC.B    'BGT',0
+00001E1E= 42 4C 45 00             1183  printBLE    DC.B    'BLE',0
+00001E22= 42 45 51 00             1184  printBEQ    DC.B    'BEQ',0
+00001E26= 4D 4F 56 45 00          1185  printMove   DC.B    'MOVE',0
+00001E2B= 2E 53 20 00             1186  printS  DC.B    '.S ',0
+00001E2F= 2E 42 20 00             1187  printB  DC.B     '.B ',0
+00001E33= 2E 57 20 00             1188  printW  DC.B    '.W ',0
+00001E37= 2E 4C 20 00             1189  printL  DC.B    '.L ',0
+00001E3B= 2D 00                   1190  printMinus  DC.B     '-',0
+00001E3D= 2B 00                   1191  printPlus   DC.B     '+',0
+00001E3F= 2C 00                   1192  printComma  DC.B    ',',0
+00001E41= 28 00                   1193  printOpenParen   DC.B     '(',0
+00001E43= 29 00                   1194  printCloseParen   DC.B     ')',0
+00001E45= 44 00                   1195  printD  DC.B     'D',0
+00001E47= 41 00                   1196  printA    DC.B    'A',0
+00001E49= 30 00                   1197  print0  DC.B    '0',0
+00001E4B= 31 00                   1198  print1  DC.B    '1',0
+00001E4D= 32 00                   1199  print2  DC.B    '2',0
+00001E4F= 33 00                   1200  print3  DC.B    '3',0
+00001E51= 34 00                   1201  print4  DC.B    '4',0
+00001E53= 35 00                   1202  print5  DC.B    '5',0
+00001E55= 36 00                   1203  print6  DC.B    '6',0
+00001E57= 37 00                   1204  print7  DC.B    '7',0
+00001E59= 24 00                   1205  print$  DC.B    '$',0
+00001E5B                          1206  
+00001E5B                          1207  *data and address storage
+00001E5C                          1208  start_loc   DS.L    1
+00001E60                          1209  end_loc     DS.L    1
+00001E64                          1210  curr_loc    DS.L    1
+00001E68                          1211  curr_word   DS.W    1   used for printing memory location
+00001E6A                          1212  curr_four_nibbles   DS.W    1   used to store actual data in memory
+00001E6C                          1213  curr_nibble DS.B    1   stores one nibble
+00001E6E                          1214  abs_address DS.L    1
+00001E72                          1215  op_size DS.B    1
+00001E73                          1216  bits0to2 DS.B    1
+00001E74                          1217  bits3to5    DS.B    1
+00001E75                          1218  bits6to8    DS.B    1
+00001E76                          1219  bits9to11   DS.B    1
+00001E77                          1220  line_counter    DS.B    1   stores lines, advance page based on this value
+00001E78                          1221  shiftsize   DS.B    1   used to store size for shifts
+00001E79                          1222  shiftID     DS.B    1   used to store bits to identify LS,AS,RO
+00001E7A                          1223  shiftDir    DS.B    1   used to store bit for shift direction
+00001E7B                          1224  shiftIR     DS.B    1   used to store bit for immediate or register
+00001E7C                          1225  shiftReg    DS.B    1   used to store bits for register
+00001E7D                          1226  shiftCount  DS.B    1   used to store bits for count/register
+00001E7E                          1227  
+00001E7E                          1228  *I/O messages
+00001E7E= 57 65 6C 63 6F 6D ...   1229  introMsg   DC.B    'Welcome to the Motorola 68k disassembler!',CR,0
+00001EA9= 54 79 70 65 20 22 ...   1230  introOptionMsg  DC.B    'Type "y" to initiate disassembly, any other character to exit:',CR,0
+00001EE9= 46 69 6E 69 73 68 ...   1231  finishedMsg DC.B    'Finished disassembly.',CR,0
+00001F00= 45 6E 74 65 72 20 ...   1232  promptStart DC.B    'Enter a starting address (8 hex digits):',CR,0
+00001F2A= 45 6E 74 65 72 20 ...   1233  promptEnd   DC.B    'Enter an ending address (8 hex digits):',CR,0
+00001F53= 49 6E 76 61 6C 69 ...   1234  inputError DC.B    'Invalid address. Must have < 9 hex digits, start_addr < end_addr, last bit even',CR,0
+00001FA4= 50 72 65 73 73 20 ...   1235  promptEnter DC.B    'Press enter to advance page:',CR,0
+00001FC2                          1236  
+00001FC2                          1237  *formatting
+00001FC2= 00                      1238  newLine DC.B    '',0 use with trap task 13
+00001FC3= 20 00                   1239  printSpace  DC.B    ' ',0 use with trap task 14
+00001FC5                          1240  
+00001FC5                          1241      END    START    
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+ABS_ADDRESS         1E6E
+ADVANCE_PAGE        1188
+ADVANCE_PAGE_CHECK  117A
+ASCII_TO_HEX        10CA
+ASCII_TO_LETTER     10EA
+BEQ_16_BIT          1916
+BEQ_32_BIT          196A
+BEQ_8_BIT           18C4
+BEQ_CHECK           18AE
+BGT_16_BIT          177E
+BGT_32_BIT          17D2
+BGT_8_BIT           172C
+BGT_CHECK           1716
+BITS0TO2            1E73
+BITS3TO5            1E74
+BITS6TO8            1E75
+BITS9TO11           1E76
+BLE_16_BIT          184A
+BLE_32_BIT          189E
+BLE_8_BIT           17F8
+BLE_CHECK           17E2
+BRA_16_BIT          16B2
+BRA_32_BIT          1706
+BRA_8_BIT           1660
+BRA_CHECK           164A
+CLR_ADDR_REGS       1DAE
+CLR_ALL_REGS        1DEC
+CLR_DATA_REGS       1DDA
+CODE0000            1246
+CODE0001            124E
+CODE0010            1256
+CODE0011            125E
+CODE0100            1266
+CODE0100_FAIL       1606
+CODE0101            160E
+CODE0110            1616
+CODE0111            197A
+CODE1000            1982
+CODE1001            198A
+CODE1010            1992
+CODE1011            199A
+CODE1100            19A2
+CODE1101            19AA
+CODE1110            19B2
+CODE1111            1A20
+CR                  D
+CURR_FOUR_NIBBLES   1E6A
+CURR_LOC            1E64
+CURR_NIBBLE         1E6C
+CURR_WORD           1E68
+DISASSEMBLE_OPTION  1010
+DISP_ERROR_MESSAGE  1124
+DONE                1DF6
+END_LOC             1E60
+FINISHEDMSG         1EE9
+FINISH_DISASSEMBLY  11AC
+FIRST_NIBBLE_TABLE  11E6
+GET_BITS_0_TO_2     1A28
+GET_BITS_3_TO_5     1A3A
+GET_BITS_6_TO_8     1A4E
+GET_BITS_9_TO_11    1A62
+GET_END_LOC         107C
+GET_FIRST_NIBBLE    1D76
+GET_FOURTH_NIBBLE   1DA2
+GET_SECOND_NIBBLE   1D86
+GET_START_LOC       103E
+GET_THIRD_NIBBLE    1D94
+HEX_TO_ASCII        1B42
+INCREMENT_BY_WORD   11C2
+INPUT               500
+INPUTERROR          1F53
+INTRO               1000
+INTROMSG            1E7E
+INTROOPTIONMSG      1EA9
+INVALID_END         111C
+INVALID_START       1114
+ISOLATE_FIRST_NIBBLE  1B0A
+ISOLATE_FOURTH_NIBBLE  1B36
+ISOLATE_SECOND_NIBBLE  1B1A
+ISOLATE_THIRD_NIBBLE  1B28
+JSR_ABSOLUTE_CHECK  1558
+JSR_ABSOLUTE_FAIL   156A
+JSR_CHECK           1530
+JSR_CHECK_2         1572
+JSR_EA_010          1590
+JSR_EA_111          15BC
+JSR_EA_111_L        15EE
+JSR_EA_111_W        15D6
+LEA_CHECK           1292
+LEA_EA_010          12CA
+LEA_EA_111          1314
+LEA_EA_111_L        1368
+LEA_EA_111_W        1332
+LETTER_TO_ASCII     1B50
+LF                  A
+LINE_COUNTER        1E77
+LOAD_BIT_TRIPLES    1A78
+NEWLINE             1FC2
+NOP_CHECK           1266
+NOT_ABSOLUTE_CHECK  13C6
+NOT_ABSOLUTE_FAIL   13D8
+NOT_CHECK           139E
+NOT_CHECK_2         13E0
+NOT_CHECK_3         1436
+NOT_EA_000          1482
+NOT_EA_001          149C
+NOT_EA_010          14A4
+NOT_EA_011          14CA
+NOT_EA_100          14D6
+NOT_EA_101          14E2
+NOT_EA_110          14EA
+NOT_EA_111          14F2
+NOT_EA_111_L        151E
+NOT_EA_111_W        150C
+NOT_EA_TABLE        1452
+NUM_TO_ASCII        1B4A
+OP_SIZE             1E72
+PREPARE_BUFFER      1132
+PRINT$              1E59
+PRINT0              1E49
+PRINT1              1E4B
+PRINT2              1E4D
+PRINT3              1E4F
+PRINT4              1E51
+PRINT5              1E53
+PRINT6              1E55
+PRINT7              1E57
+PRINTA              1E47
+PRINTB              1E2F
+PRINTBEQ            1E22
+PRINTBGT            1E1A
+PRINTBLE            1E1E
+PRINTBRA            1E16
+PRINTCLOSEPAREN     1E43
+PRINTCOMMA          1E3F
+PRINTD              1E45
+PRINTDATA           1E08
+PRINTJSR            1DFA
+PRINTL              1E37
+PRINTLEA            1E03
+PRINTMINUS          1E3B
+PRINTMOVE           1E26
+PRINTNOP            1E0E
+PRINTNOT            1DFF
+PRINTOPENPAREN      1E41
+PRINTPLUS           1E3D
+PRINTRTS            1E12
+PRINTS              1E2B
+PRINTSPACE          1FC3
+PRINTW              1E33
+PRINT_$             1D30
+PRINT_0             1C5E
+PRINT_1             1C6C
+PRINT_2             1C7A
+PRINT_3             1C88
+PRINT_4             1C96
+PRINT_5             1CA4
+PRINT_6             1CB2
+PRINT_7             1CC0
+PRINT_A             1CCE
+PRINT_B             1D4C
+PRINT_BEQ           1BC6
+PRINT_BGT           1BAA
+PRINT_BLE           1BB8
+PRINT_BRA           1B9C
+PRINT_CHAR_OF_D1    1C38
+PRINT_CLOSE_PAREN   1D06
+PRINT_COMMA         1CEA
+PRINT_D             1CDC
+PRINT_DATA          1BD4
+PRINT_JSR           1B8E
+PRINT_L             1D68
+PRINT_LEA           1B72
+PRINT_LINE          1C50
+PRINT_LONGWORD_OF_DATA  1C2A
+PRINT_MEMORY_LOCATION  1A90
+PRINT_MINUS         1D14
+PRINT_NOP           1B56
+PRINT_NOT           1B80
+PRINT_NOTB          1406
+PRINT_NOTL          1426
+PRINT_NOTW          1416
+PRINT_OPEN_PAREN    1CF8
+PRINT_PLUS          1D22
+PRINT_RTS           1B64
+PRINT_S             1D3E
+PRINT_SPACE         1C42
+PRINT_W             1D5A
+PRINT_WORD_OF_DATA  1BE8
+PRINT_WORD_OF_MEMLOC  1AC0
+PROMPTEND           1F2A
+PROMPTENTER         1FA4
+PROMPTSTART         1F00
+READ_MEMORY         114A
+REFRESH_NIBBLES     11D8
+RTS_CHECK           127C
+SHIFTCOUNT          1E7D
+SHIFTDIR            1E7A
+SHIFTID             1E79
+SHIFTIR             1E7B
+SHIFTREG            1E7C
+SHIFTSIZE           1E78
+START               1000
+START_LOC           1E5C
+START_OR_END        1108
