@@ -723,7 +723,12 @@ CODE1101
 *LSR, LSL, ASR, ASL, ROR, ROL
 CODE1110
     JSR load_bit_triples
-    MOVE.B  bits3to5, D1
+    MOVE.B  bits6to8, D1    *checking bits 6 and 7 (mem relevant)
+    ANDI.B  #$3, D1
+    MOVE.B  D1, op_size
+    CMP.B   #3, D1
+    BEQ CODE1110_mem_check
+    MOVE.B  bits3to5, D1    *checking bits 3 and 4 (reg)
     ANDI.B  #$3, D1
     CMP.B   #1, D1
     BEQ LS_check
@@ -731,6 +736,18 @@ CODE1110
     BEQ AS_check
     CMP.B   #3, D1
     BEQ RO_check
+    JSR print_data
+    RTS
+CODE1110_mem_check
+    MOVE.W  curr_four_nibbles, D1
+    LSR.W   #8, D1
+    LSR.W   #1, D1
+    CMP.W   #$71, D1
+    BEQ LS_memory
+    CMP.W   #$70, D1
+    BEQ AS_check    *will become AS_memory
+    CMP.W   #$73, D1
+    BEQ RO_check    *will become RO_memory (possibly)
     JSR print_data
     RTS
 
@@ -817,11 +834,6 @@ LSR_register
     JSR print_right
     JMP LSL_register apart from direction, exactly the same
 LS_memory   *LS memory mode
-    MOVE.W  curr_four_nibbles, D1
-    LSR.W   #8, D1
-    LSR.W   #1, D1
-    CMP.W   #$71, D1
-    BNE LS_invalid
     MOVE.B  bits3to5, D1
     CMP.B   #2, D1
     BEQ LS_memory_010
@@ -833,6 +845,7 @@ LS_memory   *LS memory mode
     BEQ LS_memory_111
     BRA LS_invalid
 LS_memory_010
+    JSR print_LS
     JSR LS_memory_dr
     JSR print_space
     JSR print_open_paren
@@ -843,6 +856,7 @@ LS_memory_010
     JSR print_close_paren
     RTS
 LS_memory_011
+    JSR print_LS
     JSR LS_memory_dr
     JSR print_space
     JSR print_open_paren
@@ -854,6 +868,7 @@ LS_memory_011
     JSR print_plus
     RTS
 LS_memory_100
+    JSR print_LS
     JSR LS_memory_dr
     JSR print_space
     JSR print_minus
@@ -905,10 +920,12 @@ LS_invalid
     RTS
 
 AS_check
-
+    JSR print_data  placeholder
+    RTS
 
 RO_check
- 
+    JSR print_data  placeholder, will refer back to LSL/R code
+    RTS
 
 *not supported
 CODE1111
@@ -1436,7 +1453,7 @@ printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START
 
-  
+
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
