@@ -755,12 +755,28 @@ BEQ_32_bit
 
 *MOVEQ
 CODE0111
-    *check if bit 8 is 0, if not then print data
-    *other wise, bits9to11 are data reg to transfer to
-    *bits 0 through 7 are byte to transfer -- add 1 to most significant (sign extend)
-    *do this by moving 1 to a data register, shifting left to bit 8, then moving
-    *bits 0 through 7 to the same register
-    *then the .B of the reg will contain the immediate value to move, use hex_to_ascii
+    JSR load_bit_triples
+    MOVE.B  bits6to8, D1
+    LSR.B   #2, D1
+    ANDI.B  #1, D1
+    CMP.B   #0, D1
+    BNE CODE0111_invalid
+    JSR print_MOVEQ
+    JSR print_hashtag
+    JSR print_$
+    JSR get_third_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_fourth_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+CODE0111_invalid
     JSR print_data
     RTS
 
@@ -1306,6 +1322,18 @@ print_right
     LEA printRight, A1
     TRAP    #15
     RTS
+    
+print_MOVE
+    MOVE.B  #14, D0
+    LEA printMOVE, A1
+    TRAP    #15
+    RTS
+
+print_MOVEQ
+    MOVE.B  #14, D0
+    LEA printMOVEQ, A1
+    TRAP    #15
+    RTS
 
 *print data if cannot decode
 print_data
@@ -1570,7 +1598,8 @@ printBRA    DC.B    'BRA',0
 printBGT    DC.B    'BGT',0
 printBLE    DC.B    'BLE',0
 printBEQ    DC.B    'BEQ',0
-printMove   DC.B    'MOVE',0
+printMOVE   DC.B    'MOVE',0
+printMOVEQ  DC.B    'MOVEQ ',0
 printS  DC.B    '.S ',0
 printB  DC.B     '.B ',0
 printW  DC.B    '.W ',0
