@@ -511,11 +511,20 @@ BRA_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.B   D3, D2  testing level of byte for backward branching, will need to apply to all other branching inst
-    ADD.B   #2, D2  testing level of byte for backward branching
+    CMP.B   #0, D3
+    BGE BRA_8_bit_add
+    SUBI.B  #1, D3
+    NOT.B   D3
+    SUB.L   D3, D2
+    ADD.L   #2, D2
+    BRA BRA_8_bit_abs
+BRA_8_bit_add
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+BRA_8_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BRA
-    JSR print_S
+    JSR print_B
     JSR print_$
     LSR.L   #8, D2
     LSR.L   #8, D2
@@ -530,7 +539,15 @@ BRA_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.W   D3, D2  testing level of word for backward branching
+    CMP.W   #0, D3
+    BGE BRA_16_bit_add
+    SUBI.W  #1, D3
+    NOT.W   D3
+    SUB.L   D3, D2
+    BRA BRA_16_bit_abs
+BRA_16_bit_add
+    ADD.L   D3, D2
+BRA_16_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BRA
     JSR print_W
@@ -557,11 +574,20 @@ BGT_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.B   D3, D2
-    ADD.B   #2, D2
+    CMP.B   #0, D3
+    BGE BGT_8_bit_add
+    SUBI.B  #1, D3
+    NOT.B   D3
+    SUB.L   D3, D2
+    ADD.L   #2, D2
+    BRA BGT_8_bit_abs
+BGT_8_bit_add
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+BGT_8_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BGT
-    JSR print_S
+    JSR print_B
     JSR print_$
     LSR.L   #8, D2
     LSR.L   #8, D2
@@ -576,7 +602,15 @@ BGT_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.W   D3, D2
+    CMP.W   #0, D3
+    BGE BGT_16_bit_add
+    SUBI.W  #1, D3
+    NOT.W   D3
+    SUB.L   D3, D2
+    BRA BGT_16_bit_abs
+BGT_16_bit_add
+    ADD.L   D3, D2
+BGT_16_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BGT
     JSR print_W
@@ -603,11 +637,20 @@ BLE_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.B   D3, D2
-    ADD.B   #2, D2
+    CMP.B   #0, D3
+    BGE BLE_8_bit_add
+    SUBI.B  #1, D3
+    NOT.B   D3
+    SUB.L   D3, D2
+    ADD.L   #2, D2
+    BRA BLE_8_bit_abs
+BLE_8_bit_add
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+BLE_8_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BLE
-    JSR print_S
+    JSR print_B
     JSR print_$
     LSR.L   #8, D2
     LSR.L   #8, D2
@@ -622,7 +665,15 @@ BLE_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.W   D3, D2
+    CMP.W   #0, D3
+    BGE BLE_16_bit_add
+    SUBI.W  #1, D3
+    NOT.W   D3
+    SUB.L   D3, D2
+    BRA BLE_16_bit_abs
+BLE_16_bit_add
+    ADD.L   D3, D2
+BLE_16_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BLE
     JSR print_W
@@ -649,11 +700,20 @@ BEQ_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.B   D3, D2
-    ADD.B   #2, D2
+    CMP.B   #0, D3
+    BGE BEQ_8_bit_add
+    SUBI.B  #1, D3
+    NOT.B   D3
+    SUB.L   D3, D2
+    ADD.L   #2, D2
+    BRA BEQ_8_bit_abs
+BEQ_8_bit_add
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+BEQ_8_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BEQ
-    JSR print_S
+    JSR print_B
     JSR print_$
     LSR.L   #8, D2
     LSR.L   #8, D2
@@ -668,7 +728,15 @@ BEQ_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.W   D3, D2
+    CMP.W   #0, D3
+    BGE BEQ_16_bit_add
+    SUBI.W  #1, D3
+    NOT.W   D3
+    SUB.L   D3, D2
+    BRA BEQ_16_bit_abs
+BEQ_16_bit_add
+    ADD.L   D3, D2
+BEQ_16_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BEQ
     JSR print_W
@@ -687,6 +755,12 @@ BEQ_32_bit
 
 *MOVEQ
 CODE0111
+    *check if bit 8 is 0, if not then print data
+    *other wise, bits9to11 are data reg to transfer to
+    *bits 0 through 7 are byte to transfer -- add 1 to most significant (sign extend)
+    *do this by moving 1 to a data register, shifting left to bit 8, then moving
+    *bits 0 through 7 to the same register
+    *then the .B of the reg will contain the immediate value to move, use hex_to_ascii
     JSR print_data
     RTS
 
