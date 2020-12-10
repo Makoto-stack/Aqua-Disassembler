@@ -323,6 +323,12 @@ NOT_check
     CMP.W   #$0046,D1
     BNE     JSR_check
     MOVE.B  bits3to5, D1
+    CMP.B   #1, D1
+    BEQ NOT_absolute_fail
+    CMP.B   #5, D1
+    BEQ NOT_absolute_fail
+    CMP.B   #6, D1
+    BEQ NOT_absolute_fail
     CMP.B   #7, D1
     BEQ NOT_absolute_check
     BRA NOT_check_2
@@ -482,6 +488,133 @@ CODE0100_fail
 
 *ADDQ
 CODE0101
+ADDQ_check
+    JSR load_bit_triples
+    MOVE.B  bits6to8, D1    check 8th bit
+    LSR.B   #2, D1
+    CMP.B   #1, D1
+    BEQ CODE0101_fail
+    MOVE.B  bits6to8, D1    check valid size
+    ANDI.B  #$3, D1
+    CMP.B   #3, D1
+    BEQ CODE0101_fail
+    MOVE.B  D1, op_size
+    MOVE.B  bits3to5, D1    check supported EA
+    CMP.B   #5, D1
+    BEQ CODE0101_fail
+    CMP.B   #6, D1
+    BEQ CODE0101_fail
+    CMP.B   #7, D1
+    BEQ ADDQ_absolute_check if absolute mode, make sure valid
+    BRA ADDQ_check_2    
+ADDQ_absolute_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BGT CODE0101_fail
+ADDQ_check_2
+    JSR print_ADDQ
+    MOVE.B  op_size, D1
+    CMP.B   #1, D1
+    BLT print_ADDQB
+    BEQ print_ADDQW
+    BGT print_ADDQL
+print_ADDQB
+    JSR print_B
+    BRA ADDQ_check_3
+print_ADDQW
+    JSR print_W
+    BRA ADDQ_check_3
+print_ADDQL
+    JSR print_L
+    BRA ADDQ_check_3
+ADDQ_check_3
+    JSR print_hashtag
+    MOVE.B  bits9to11, D1
+    CMP.B   #0, D1
+    BEQ ADDQ_data_8
+    BRA ADDQ_check_4
+ADDQ_data_8
+    JSR print_hashtag
+    MOVE.B  #8, D1
+    JSR print_char_of_D1
+ADDQ_check_4
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA ADDQ_EA_table, A2
+    JSR 0(A2, D1)
+    RTS
+ADDQ_EA_table
+    JMP ADDQ_EA_000
+    JMP ADDQ_EA_001
+    JMP ADDQ_EA_010
+    JMP ADDQ_EA_011
+    JMP ADDQ_EA_100
+    JMP ADDQ_EA_101
+    JMP ADDQ_EA_110
+    JMP ADDQ_EA_111
+ADDQ_EA_000
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+ADDQ_EA_001
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+ADDQ_EA_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+ADDQ_EA_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+ADDQ_EA_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+ADDQ_EA_101 *should be unreachable
+    BRA CODE0101_fail
+ADDQ_EA_110 *should be unreachable
+    BRA CODE0101_fail
+ADDQ_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BEQ ADDQ_EA_111_L
+    BLT ADDQ_EA_111_W
+ADDQ_EA_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+ADDQ_EA_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+    
+CODE0101_fail
     JSR print_data
     RTS
 
@@ -1334,6 +1467,12 @@ print_MOVEQ
     LEA printMOVEQ, A1
     TRAP    #15
     RTS
+    
+print_ADDQ
+    MOVE.B  #14, D0
+    LEA printADDQ, A1
+    TRAP    #15
+    RTS
 
 *print data if cannot decode
 print_data
@@ -1600,6 +1739,7 @@ printBLE    DC.B    'BLE',0
 printBEQ    DC.B    'BEQ',0
 printMOVE   DC.B    'MOVE',0
 printMOVEQ  DC.B    'MOVEQ ',0
+printADDQ   DC.B    'ADDQ',0
 printS  DC.B    '.S ',0
 printB  DC.B     '.B ',0
 printW  DC.B    '.W ',0
