@@ -323,6 +323,12 @@ NOT_check
     CMP.W   #$0046,D1
     BNE     JSR_check
     MOVE.B  bits3to5, D1
+    CMP.B   #1, D1
+    BEQ NOT_absolute_fail
+    CMP.B   #5, D1
+    BEQ NOT_absolute_fail
+    CMP.B   #6, D1
+    BEQ NOT_absolute_fail
     CMP.B   #7, D1
     BEQ NOT_absolute_check
     BRA NOT_check_2
@@ -482,6 +488,133 @@ CODE0100_fail
 
 *ADDQ
 CODE0101
+ADDQ_check
+    JSR load_bit_triples
+    MOVE.B  bits6to8, D1    check 8th bit
+    LSR.B   #2, D1
+    CMP.B   #1, D1
+    BEQ CODE0101_fail
+    MOVE.B  bits6to8, D1    check valid size
+    ANDI.B  #$3, D1
+    CMP.B   #3, D1
+    BEQ CODE0101_fail
+    MOVE.B  D1, op_size
+    MOVE.B  bits3to5, D1    check supported EA
+    CMP.B   #5, D1
+    BEQ CODE0101_fail
+    CMP.B   #6, D1
+    BEQ CODE0101_fail
+    CMP.B   #7, D1
+    BEQ ADDQ_absolute_check if absolute mode, make sure valid
+    BRA ADDQ_check_2    
+ADDQ_absolute_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BGT CODE0101_fail
+ADDQ_check_2
+    JSR print_ADDQ
+    MOVE.B  op_size, D1
+    CMP.B   #1, D1
+    BLT print_ADDQB
+    BEQ print_ADDQW
+    BGT print_ADDQL
+print_ADDQB
+    JSR print_B
+    BRA ADDQ_check_3
+print_ADDQW
+    JSR print_W
+    BRA ADDQ_check_3
+print_ADDQL
+    JSR print_L
+    BRA ADDQ_check_3
+ADDQ_check_3
+    JSR print_hashtag
+    MOVE.B  bits9to11, D1
+    CMP.B   #0, D1
+    BEQ ADDQ_data_8
+    BRA ADDQ_check_4
+ADDQ_data_8
+    JSR print_hashtag
+    MOVE.B  #8, D1
+    JSR print_char_of_D1
+ADDQ_check_4
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA ADDQ_EA_table, A2
+    JSR 0(A2, D1)
+    RTS
+ADDQ_EA_table
+    JMP ADDQ_EA_000
+    JMP ADDQ_EA_001
+    JMP ADDQ_EA_010
+    JMP ADDQ_EA_011
+    JMP ADDQ_EA_100
+    JMP ADDQ_EA_101
+    JMP ADDQ_EA_110
+    JMP ADDQ_EA_111
+ADDQ_EA_000
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+ADDQ_EA_001
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+ADDQ_EA_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+ADDQ_EA_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+ADDQ_EA_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+ADDQ_EA_101 *should be unreachable
+    BRA CODE0101_fail
+ADDQ_EA_110 *should be unreachable
+    BRA CODE0101_fail
+ADDQ_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BEQ ADDQ_EA_111_L
+    BLT ADDQ_EA_111_W
+ADDQ_EA_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+ADDQ_EA_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+    
+CODE0101_fail
     JSR print_data
     RTS
 
@@ -516,6 +649,7 @@ BRA_8_bit
     SUBI.B  #1, D3
     NOT.B   D3
     SUB.L   D3, D2
+    ADD.L   #2, D2
     BRA BRA_8_bit_abs
 BRA_8_bit_add
     ADD.L   D3, D2
@@ -573,8 +707,17 @@ BGT_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.W   D3, D2
-    ADD.W   #2, D2
+    CMP.B   #0, D3
+    BGE BGT_8_bit_add
+    SUBI.B  #1, D3
+    NOT.B   D3
+    SUB.L   D3, D2
+    ADD.L   #2, D2
+    BRA BGT_8_bit_abs
+BGT_8_bit_add
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+BGT_8_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BGT
     JSR print_B
@@ -592,7 +735,15 @@ BGT_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.W   D3, D2
+    CMP.W   #0, D3
+    BGE BGT_16_bit_add
+    SUBI.W  #1, D3
+    NOT.W   D3
+    SUB.L   D3, D2
+    BRA BGT_16_bit_abs
+BGT_16_bit_add
+    ADD.L   D3, D2
+BGT_16_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BGT
     JSR print_W
@@ -619,8 +770,17 @@ BLE_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.W   D3, D2
-    ADD.W   #2, D2
+    CMP.B   #0, D3
+    BGE BLE_8_bit_add
+    SUBI.B  #1, D3
+    NOT.B   D3
+    SUB.L   D3, D2
+    ADD.L   #2, D2
+    BRA BLE_8_bit_abs
+BLE_8_bit_add
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+BLE_8_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BLE
     JSR print_B
@@ -638,7 +798,15 @@ BLE_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.W   D3, D2
+    CMP.W   #0, D3
+    BGE BLE_16_bit_add
+    SUBI.W  #1, D3
+    NOT.W   D3
+    SUB.L   D3, D2
+    BRA BLE_16_bit_abs
+BLE_16_bit_add
+    ADD.L   D3, D2
+BLE_16_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BLE
     JSR print_W
@@ -665,8 +833,17 @@ BEQ_8_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$000000FF, D3
-    ADD.W   D3, D2
-    ADD.W   #2, D2
+    CMP.B   #0, D3
+    BGE BEQ_8_bit_add
+    SUBI.B  #1, D3
+    NOT.B   D3
+    SUB.L   D3, D2
+    ADD.L   #2, D2
+    BRA BEQ_8_bit_abs
+BEQ_8_bit_add
+    ADD.L   D3, D2
+    ADD.L   #2, D2
+BEQ_8_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BEQ
     JSR print_B
@@ -684,7 +861,15 @@ BEQ_16_bit
     MOVE.L  curr_loc, D2
     MOVE.W  curr_four_nibbles, D3
     ANDI.L  #$0000FFFF, D3
-    ADD.W   D3, D2
+    CMP.W   #0, D3
+    BGE BEQ_16_bit_add
+    SUBI.W  #1, D3
+    NOT.W   D3
+    SUB.L   D3, D2
+    BRA BEQ_16_bit_abs
+BEQ_16_bit_add
+    ADD.L   D3, D2
+BEQ_16_bit_abs
     MOVE.L  D2, abs_address
     JSR print_BEQ
     JSR print_W
@@ -703,17 +888,201 @@ BEQ_32_bit
 
 *MOVEQ
 CODE0111
-    *check if bit 8 is 0, if not then print data
-    *other wise, bits9to11 are data reg to transfer to
-    *bits 0 through 7 are byte to transfer -- add 1 to most significant (sign extend)
-    *do this by moving 1 to a data register, shifting left to bit 8, then moving
-    *bits 0 through 7 to the same register
-    *then the .B of the reg will contain the immediate value to move, use hex_to_ascii
+    JSR load_bit_triples
+    MOVE.B  bits6to8, D1
+    LSR.B   #2, D1
+    ANDI.B  #1, D1
+    CMP.B   #0, D1
+    BNE CODE0111_invalid
+    JSR print_MOVEQ
+    JSR print_hashtag
+    JSR print_$
+    JSR get_third_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR get_fourth_nibble
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+CODE0111_invalid
     JSR print_data
     RTS
 
 *OR
 CODE1000
+    JSR load_bit_triples
+    MOVE.B  bits6to8, D1
+    CMP.B   #7, D1
+    BEQ CODE1000_fail
+    CMP.B   #3, D1
+    BEQ CODE1000_fail
+    BLT OR_Dn_check
+    BGT OR_EA_check
+
+OR_Dn_check
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA OR_Dn_EA_table, A2
+    JSR 0(A2, D1)
+    RTS
+OR_Dn_EA_table
+    JMP OR_Dn_EA_000
+    JMP OR_Dn_EA_001
+    JMP OR_Dn_EA_010
+    JMP OR_Dn_EA_011
+    JMP OR_Dn_EA_100
+    JMP OR_Dn_EA_101
+    JMP OR_Dn_EA_110
+    JMP OR_Dn_EA_111
+OR_Dn_EA_000
+    JSR OR_and_size
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+OR_Dn_EA_reuse
+    JSR print_comma
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+OR_Dn_EA_001
+    BRA CODE1000_fail
+OR_Dn_EA_010
+    JSR OR_and_size
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    BRA OR_Dn_EA_reuse
+OR_Dn_EA_011
+    JSR OR_and_size
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    BRA OR_Dn_EA_reuse
+OR_Dn_EA_100
+    JSR OR_and_size
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    BRA OR_Dn_EA_reuse
+OR_Dn_EA_101
+    BRA CODE1000_fail
+OR_Dn_EA_110
+    BRA CODE1000_fail
+OR_Dn_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ OR_Dn_EA_111_W
+    CMP.B   #1, D1
+    BEQ OR_Dn_EA_111_L
+    CMP.B   #4, D1
+    BEQ OR_Dn_EA_111_I
+    BRA CODE1000_fail
+OR_Dn_EA_111_W
+    MOVE.B  bits9to11, D2
+    JSR OR_and_size
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+OR_Dn_EA_111_L
+    MOVE.B  bits9to11, D2
+    JSR OR_and_size
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR  hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+OR_Dn_EA_111_I
+    JSR OR_and_size
+    MOVE.B  bits9to11, D2
+    MOVE.B  bits6to8, D1
+    CMP.B   #1, D1
+    BLE OR_Dn_EA_111_I_W
+    BGT OR_Dn_EA_111_I_L
+OR_Dn_EA_111_I_W
+    JSR print_$
+    JSR print_hashtag
+    JSR increment_by_word
+    JSR print_word_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+OR_Dn_EA_111_I_L
+    JSR print_$
+    JSR print_hashtag
+    JSR increment_by_word
+    JSR print_longword_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+    
+OR_EA_check
+    
+
+OR_and_size
+    JSR print_OR
+    MOVE.B  bits6to8, D0
+    CMP.B   #0, D0
+    BEQ OR_B
+    CMP.B   #1, D0
+    BEQ OR_W
+    CMP.B   #2, D0
+    BEQ OR_L
+    CMP.B   #4, D0
+    BEQ OR_B
+    CMP.B   #5, D0
+    BEQ OR_W
+    CMP.B   #6, D0
+    BEQ OR_L
+OR_B
+    JSR print_OR
+    JSR print_B
+    RTS
+OR_W
+    JSR print_OR
+    JSR print_W
+    RTS
+OR_L
+    JSR print_OR
+    JSR print_L
+    RTS
+
+CODE1000_fail
     JSR print_data
     RTS
 
@@ -1254,6 +1623,30 @@ print_right
     LEA printRight, A1
     TRAP    #15
     RTS
+    
+print_MOVE
+    MOVE.B  #14, D0
+    LEA printMOVE, A1
+    TRAP    #15
+    RTS
+
+print_MOVEQ
+    MOVE.B  #14, D0
+    LEA printMOVEQ, A1
+    TRAP    #15
+    RTS
+    
+print_ADDQ
+    MOVE.B  #14, D0
+    LEA printADDQ, A1
+    TRAP    #15
+    RTS
+    
+print_OR
+    MOVE.B  #14, D0
+    LEA printOR, A1
+    TRAP    #15
+    RTS
 
 *print data if cannot decode
 print_data
@@ -1518,7 +1911,10 @@ printBRA    DC.B    'BRA',0
 printBGT    DC.B    'BGT',0
 printBLE    DC.B    'BLE',0
 printBEQ    DC.B    'BEQ',0
-printMove   DC.B    'MOVE',0
+printMOVE   DC.B    'MOVE',0
+printMOVEQ  DC.B    'MOVEQ ',0
+printADDQ   DC.B    'ADDQ',0
+printOR DC.B    'OR',0
 printS  DC.B    '.S ',0
 printB  DC.B     '.B ',0
 printW  DC.B    '.W ',0
@@ -1577,5 +1973,6 @@ newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START
+
 
 
