@@ -1029,8 +1029,8 @@ OR_Dn_EA_111_I
     BLE OR_Dn_EA_111_I_W
     BGT OR_Dn_EA_111_I_L
 OR_Dn_EA_111_I_W
-    JSR print_$
     JSR print_hashtag
+    JSR print_$
     JSR increment_by_word
     JSR print_word_of_data
     JSR print_comma
@@ -1040,8 +1040,8 @@ OR_Dn_EA_111_I_W
     JSR print_char_of_D1
     RTS
 OR_Dn_EA_111_I_L
-    JSR print_$
     JSR print_hashtag
+    JSR print_$
     JSR increment_by_word
     JSR print_longword_of_data
     JSR print_comma
@@ -1302,8 +1302,8 @@ SUB_Dn_EA_111_I
     BLE SUB_Dn_EA_111_I_W
     BGT SUB_Dn_EA_111_I_L
 SUB_Dn_EA_111_I_W
-    JSR print_$
     JSR print_hashtag
+    JSR print_$
     JSR increment_by_word
     JSR print_word_of_data
     JSR print_comma
@@ -1313,8 +1313,8 @@ SUB_Dn_EA_111_I_W
     JSR print_char_of_D1
     RTS
 SUB_Dn_EA_111_I_L
-    JSR print_$
     JSR print_hashtag
+    JSR print_$
     JSR increment_by_word
     JSR print_longword_of_data
     JSR print_comma
@@ -1577,8 +1577,8 @@ AND_Dn_EA_111_I
     BLE AND_Dn_EA_111_I_W
     BGT AND_Dn_EA_111_I_L
 AND_Dn_EA_111_I_W
-    JSR print_$
     JSR print_hashtag
+    JSR print_$
     JSR increment_by_word
     JSR print_word_of_data
     JSR print_comma
@@ -1588,8 +1588,8 @@ AND_Dn_EA_111_I_W
     JSR print_char_of_D1
     RTS
 AND_Dn_EA_111_I_L
-    JSR print_$
     JSR print_hashtag
+    JSR print_$
     JSR increment_by_word
     JSR print_longword_of_data
     JSR print_comma
