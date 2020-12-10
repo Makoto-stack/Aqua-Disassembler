@@ -1180,6 +1180,274 @@ CODE1000_fail
 
 *SUB
 CODE1001
+    JSR load_bit_triples
+    MOVE.B  bits6to8, D1
+    CMP.B   #7, D1
+    BEQ CODE1001_fail
+    CMP.B   #3, D1
+    BEQ CODE1001_fail
+    BLT SUB_Dn_check
+    BGT SUB_EA_check
+
+SUB_Dn_check
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA SUB_Dn_EA_table, A2
+    JSR 0(A2, D1)
+    RTS
+SUB_Dn_EA_table
+    JMP SUB_Dn_EA_000
+    JMP SUB_Dn_EA_001
+    JMP SUB_Dn_EA_010
+    JMP SUB_Dn_EA_011
+    JMP SUB_Dn_EA_100
+    JMP SUB_Dn_EA_101
+    JMP SUB_Dn_EA_110
+    JMP SUB_Dn_EA_111
+SUB_Dn_EA_000
+    JSR SUB_and_size
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+SUB_Dn_EA_reuse
+    JSR print_comma
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+SUB_Dn_EA_001
+    MOVE.B  bits6to8, D1
+    CMP.B   #0, D1
+    BEQ CODE1001_fail
+    JSR SUB_and_size
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    BRA SUB_Dn_EA_reuse
+SUB_Dn_EA_010
+    JSR SUB_and_size
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    BRA SUB_Dn_EA_reuse
+SUB_Dn_EA_011
+    JSR SUB_and_size
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    BRA SUB_Dn_EA_reuse
+SUB_Dn_EA_100
+    JSR SUB_and_size
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    BRA SUB_Dn_EA_reuse
+SUB_Dn_EA_101
+    BRA CODE1001_fail
+SUB_Dn_EA_110
+    BRA CODE1001_fail
+SUB_Dn_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ SUB_Dn_EA_111_W
+    CMP.B   #1, D1
+    BEQ SUB_Dn_EA_111_L
+    CMP.B   #4, D1
+    BEQ SUB_Dn_EA_111_I
+    BRA CODE1001_fail
+SUB_Dn_EA_111_W
+    MOVE.B  bits9to11, D2
+    JSR SUB_and_size
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+SUB_Dn_EA_111_L
+    MOVE.B  bits9to11, D2
+    JSR AND_and_size
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR  hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+SUB_Dn_EA_111_I
+    JSR SUB_and_size
+    MOVE.B  bits9to11, D2
+    MOVE.B  bits6to8, D1
+    CMP.B   #1, D1
+    BLE SUB_Dn_EA_111_I_W
+    BGT SUB_Dn_EA_111_I_L
+SUB_Dn_EA_111_I_W
+    JSR print_$
+    JSR print_hashtag
+    JSR increment_by_word
+    JSR print_word_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+SUB_Dn_EA_111_I_L
+    JSR print_$
+    JSR print_hashtag
+    JSR increment_by_word
+    JSR print_longword_of_data
+    JSR print_comma
+    JSR print_D
+    MOVE.B  D2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+    
+SUB_EA_check
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA SUB_EA_EA_table, A2
+    JSR 0(A2, D1)
+    RTS
+SUB_EA_EA_table
+    JMP SUB_EA_EA_000
+    JMP SUB_EA_EA_001
+    JMP SUB_EA_EA_010
+    JMP SUB_EA_EA_011
+    JMP SUB_EA_EA_100
+    JMP SUB_EA_EA_101
+    JMP SUB_EA_EA_110
+    JMP SUB_EA_EA_111
+SUB_EA_EA_000
+    BRA CODE1001_fail
+SUB_EA_EA_001
+    BRA CODE1001_fail
+SUB_EA_EA_010
+    JSR SUB_and_size
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+SUB_EA_EA_011
+    JSR SUB_and_size
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+SUB_EA_EA_100
+    JSR SUB_and_size
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+SUB_EA_EA_101
+    BRA CODE1001_fail
+SUB_EA_EA_110
+    BRA CODE1001_fail
+SUB_EA_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ SUB_EA_EA_111_W
+    CMP.B   #1, D1
+    BEQ SUB_EA_EA_111_L
+    BRA CODE1001_fail
+SUB_EA_EA_111_W
+    JSR SUB_and_size
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+SUB_EA_EA_111_L
+    JSR SUB_and_size
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_comma
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+    
+SUB_and_size
+    JSR print_SUB
+    MOVE.B  bits6to8, D0
+    CMP.B   #0, D0
+    BEQ SUB_B
+    CMP.B   #1, D0
+    BEQ SUB_W
+    CMP.B   #2, D0
+    BEQ SUB_L
+    CMP.B   #4, D0
+    BEQ SUB_B
+    CMP.B   #5, D0
+    BEQ SUB_W
+    CMP.B   #6, D0
+    BEQ SUB_L
+SUB_B
+    JSR print_B
+    RTS
+SUB_W
+    JSR print_W
+    RTS
+SUB_L
+    JSR print_L
+    RTS
+
+CODE1001_fail
     JSR print_data
     RTS
 
@@ -2005,6 +2273,12 @@ print_AND
     LEA printAND, A1
     TRAP    #15
     RTS
+    
+print_SUB
+    MOVE.B  #14, D0
+    LEA printSUB, A1
+    TRAP    #15
+    RTS
 
 *print data if cannot decode
 print_data
@@ -2274,6 +2548,7 @@ printMOVEQ  DC.B    'MOVEQ ',0
 printADDQ   DC.B    'ADDQ',0
 printOR DC.B    'OR',0
 printAND    DC.B    'AND',0
+printSUB    DC.B    'SUB',0
 printS  DC.B    '.S ',0
 printB  DC.B     '.B ',0
 printW  DC.B    '.W ',0
