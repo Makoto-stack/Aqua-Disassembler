@@ -424,11 +424,393 @@ CODE0001_fail
 
 *MOVE.L, MOVEA.L
 CODE0010
+    JSR load_bit_triples
+MOVEL_dest_check
+    MOVE.B  bits6to8, D1    check dest
+    CMP.B   #1, D1
+    BEQ CODE0010_fail
+    CMP.B   #5, D1
+    BEQ CODE0010_fail
+    CMP.B   #6, D1
+    BEQ CODE0010_fail
+    CMP.B   #7, D1
+    BEQ MOVEL_dest_abs_check
+MOVEL_source_check
+    MOVE.B  bits3to5, D1    check source
+    CMP.B   #5, D1
+    BEQ CODE0010_fail
+    CMP.B   #6, D1
+    BEQ CODE0010_fail
+    CMP.B   #7, D1
+    BEQ MOVEL_source_abs_check
+    BRA MOVEL_valid
+MOVEL_dest_abs_check
+    MOVE.B  bits9to11, D1
+    CMP.B   #1, D1
+    BGT CODE0010_fail
+    BRA MOVEL_source_check
+MOVEL_source_abs_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BLE MOVEL_valid
+    CMP.B   #4, D1
+    BEQ MOVEL_valid
+    BRA CODE0010_fail
+MOVEL_valid
+    JSR print_MOVE
+    JSR print_L
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEL_source_table, A2
+    JSR 0(A2, D1)
+    JSR print_comma
+    MOVE.B  bits6to8, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEL_dest_table, A2
+    JSR 0(A2, D1)
+    RTS
+    
+MOVEL_source_table
+    JMP MOVEL_source_000
+    JMP MOVEL_source_001
+    JMP MOVEL_source_010
+    JMP MOVEL_source_011
+    JMP MOVEL_source_100
+    JMP MOVEL_source_101
+    JMP MOVEL_source_110
+    JMP MOVEL_source_111
+MOVEL_source_000
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEL_source_001
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEL_source_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEL_source_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+MOVEL_source_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEL_source_101
+    BRA CODE0010_fail   should be inaccessible
+MOVEL_source_110
+    BRA CODE0010_fail   should be inaccessible
+MOVEL_source_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ MOVEL_source_111_W
+    CMP.B   #1, D1
+    BEQ MOVEL_source_111_L
+    CMP.B   #4, D1
+    BEQ MOVEL_source_111_I
+    BRA CODE0010_fail   should be inaccessible
+MOVEL_source_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+MOVEL_source_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+MOVEL_source_111_I
+    JSR print_hashtag
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+    
+MOVEL_dest_table
+    JMP MOVEL_dest_000
+    JMP MOVEL_dest_001
+    JMP MOVEL_dest_010
+    JMP MOVEL_dest_011
+    JMP MOVEL_dest_100
+    JMP MOVEL_dest_101
+    JMP MOVEL_dest_110
+    JMP MOVEL_dest_111
+MOVEL_dest_000
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEL_dest_001
+    BRA CODE0010_fail
+MOVEL_dest_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEL_dest_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+MOVEL_dest_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEL_dest_101
+    BRA CODE0010_fail   should be inaccessible
+MOVEL_dest_110
+    BRA CODE0010_fail   should be inaccessible
+MOVEL_dest_111
+    MOVE.B  bits9to11, D1
+    CMP.B   #0, D1
+    BEQ MOVEL_dest_111_W
+    CMP.B   #1, D1
+    BEQ MOVEL_dest_111_L
+    BRA CODE0010_fail   should be inaccessible
+MOVEL_dest_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+MOVEL_dest_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+    
+CODE0010_fail
     JSR print_data
     RTS
 
 *MOVE.W, MOVEA.W
 CODE0011
+    JSR load_bit_triples
+MOVEW_dest_check
+    MOVE.B  bits6to8, D1    check dest
+    CMP.B   #1, D1
+    BEQ CODE0011_fail
+    CMP.B   #5, D1
+    BEQ CODE0011_fail
+    CMP.B   #6, D1
+    BEQ CODE0011_fail
+    CMP.B   #7, D1
+    BEQ MOVEW_dest_abs_check
+MOVEW_source_check
+    MOVE.B  bits3to5, D1    check source
+    CMP.B   #5, D1
+    BEQ CODE0011_fail
+    CMP.B   #6, D1
+    BEQ CODE0011_fail
+    CMP.B   #7, D1
+    BEQ MOVEW_source_abs_check
+    BRA MOVEW_valid
+MOVEW_dest_abs_check
+    MOVE.B  bits9to11, D1
+    CMP.B   #1, D1
+    BGT CODE0011_fail
+    BRA MOVEW_source_check
+MOVEW_source_abs_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BLE MOVEW_valid
+    CMP.B   #4, D1
+    BEQ MOVEW_valid
+    BRA CODE0011_fail
+MOVEW_valid
+    JSR print_MOVE
+    JSR print_W
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEW_source_table, A2
+    JSR 0(A2, D1)
+    JSR print_comma
+    MOVE.B  bits6to8, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEW_dest_table, A2
+    JSR 0(A2, D1)
+    RTS
+    
+MOVEW_source_table
+    JMP MOVEW_source_000
+    JMP MOVEW_source_001
+    JMP MOVEW_source_010
+    JMP MOVEW_source_011
+    JMP MOVEW_source_100
+    JMP MOVEW_source_101
+    JMP MOVEW_source_110
+    JMP MOVEW_source_111
+MOVEW_source_000
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEW_source_001
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEW_source_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEW_source_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+MOVEW_source_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEW_source_101
+    BRA CODE0011_fail   should be inaccessible
+MOVEW_source_110
+    BRA CODE0011_fail   should be inaccessible
+MOVEW_source_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ MOVEW_source_111_W
+    CMP.B   #1, D1
+    BEQ MOVEW_source_111_L
+    CMP.B   #4, D1
+    BEQ MOVEW_source_111_I
+    BRA CODE0011_fail   should be inaccessible
+MOVEW_source_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+MOVEW_source_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+MOVEW_source_111_I
+    JSR print_hashtag
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+    
+MOVEW_dest_table
+    JMP MOVEW_dest_000
+    JMP MOVEW_dest_001
+    JMP MOVEW_dest_010
+    JMP MOVEW_dest_011
+    JMP MOVEW_dest_100
+    JMP MOVEW_dest_101
+    JMP MOVEW_dest_110
+    JMP MOVEW_dest_111
+MOVEW_dest_000
+    JSR print_D
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEW_dest_001
+    BRA CODE0011_fail
+MOVEW_dest_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEW_dest_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+MOVEW_dest_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEW_dest_101
+    BRA CODE0011_fail   should be inaccessible
+MOVEW_dest_110
+    BRA CODE0011_fail   should be inaccessible
+MOVEW_dest_111
+    MOVE.B  bits9to11, D1
+    CMP.B   #0, D1
+    BEQ MOVEW_dest_111_W
+    CMP.B   #1, D1
+    BEQ MOVEW_dest_111_L
+    BRA CODE0011_fail   should be inaccessible
+MOVEW_dest_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+MOVEW_dest_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+    
+CODE0011_fail
     JSR print_data
     RTS
 
