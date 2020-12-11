@@ -428,7 +428,7 @@ CODE0010
 MOVEL_dest_check
     MOVE.B  bits6to8, D1    check dest
     CMP.B   #1, D1
-    BEQ CODE0010_fail
+    BEQ MOVEAL_check
     CMP.B   #5, D1
     BEQ CODE0010_fail
     CMP.B   #6, D1
@@ -609,6 +609,113 @@ MOVEL_dest_111_W
     JSR print_word_of_data
     RTS
 MOVEL_dest_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+    
+MOVEAL_check
+    MOVE.B  bits3to5, D1    check source
+    CMP.B   #5, D1
+    BEQ CODE0010_fail
+    CMP.B   #6, D1
+    BEQ CODE0010_fail
+    CMP.B   #7, D1
+    BEQ MOVEAL_abs_check
+    BRA MOVEAL_valid
+MOVEAL_abs_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BLE MOVEAL_valid
+    CMP.B   #4, D1
+    BEQ MOVEAL_valid
+    BRA CODE0010_fail
+MOVEAL_valid
+    JSR print_MOVEA
+    JSR print_L
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEAL_EA_table, A2
+    JSR 0(A2, D1)
+    JSR print_comma
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEAL_EA_table
+    JMP MOVEAL_EA_000
+    JMP MOVEAL_EA_001
+    JMP MOVEAL_EA_010
+    JMP MOVEAL_EA_011
+    JMP MOVEAL_EA_100
+    JMP MOVEAL_EA_101
+    JMP MOVEAL_EA_110
+    JMP MOVEAL_EA_111
+MOVEAL_EA_000
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEAL_EA_001
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEAL_EA_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEAL_EA_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+MOVEAL_EA_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEAL_EA_101
+    BRA CODE0010_fail   should be inaccessible
+MOVEAL_EA_110
+    BRA CODE0010_fail   should be inaccessible
+MOVEAL_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ MOVEAL_111_W
+    CMP.B   #1, D1
+    BEQ MOVEAL_111_L
+    CMP.B   #4, D1
+    BEQ MOVEAL_111_I
+    BRA CODE0010_fail   should be inaccessible
+MOVEAL_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+MOVEAL_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+MOVEAL_111_I
+    JSR print_hashtag
     JSR print_$
     JSR increment_by_word
     JSR print_longword_of_data
