@@ -546,7 +546,7 @@ MOVEL_source_111_I
     JSR print_hashtag
     JSR print_$
     JSR increment_by_word
-    JSR print_word_of_data
+    JSR print_longword_of_data
     RTS
     
 MOVEL_dest_table
@@ -624,7 +624,7 @@ CODE0011
 MOVEW_dest_check
     MOVE.B  bits6to8, D1    check dest
     CMP.B   #1, D1
-    BEQ CODE0011_fail
+    BEQ MOVEAW_check
     CMP.B   #5, D1
     BEQ CODE0011_fail
     CMP.B   #6, D1
@@ -808,6 +808,113 @@ MOVEW_dest_111_L
     JSR print_$
     JSR increment_by_word
     JSR print_longword_of_data
+    RTS
+    
+MOVEAW_check
+    MOVE.B  bits3to5, D1    check source
+    CMP.B   #5, D1
+    BEQ CODE0011_fail
+    CMP.B   #6, D1
+    BEQ CODE0011_fail
+    CMP.B   #7, D1
+    BEQ MOVEAW_abs_check
+    BRA MOVEAW_valid
+MOVEAW_abs_check
+    MOVE.B  bits0to2, D1
+    CMP.B   #1, D1
+    BLE MOVEAW_valid
+    CMP.B   #4, D1
+    BEQ MOVEAW_valid
+    BRA CODE0011_fail
+MOVEAW_valid
+    JSR print_MOVEA
+    JSR print_W
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEAW_EA_table, A2
+    JSR 0(A2, D1)
+    JSR print_comma
+    JSR print_A
+    MOVE.B  bits9to11, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEAW_EA_table
+    JMP MOVEAW_EA_000
+    JMP MOVEAW_EA_001
+    JMP MOVEAW_EA_010
+    JMP MOVEAW_EA_011
+    JMP MOVEAW_EA_100
+    JMP MOVEAW_EA_101
+    JMP MOVEAW_EA_110
+    JMP MOVEAW_EA_111
+MOVEAW_EA_000
+    JSR print_D
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEAW_EA_001
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    RTS
+MOVEAW_EA_010
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEAW_EA_011
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    RTS
+MOVEAW_EA_100
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEAW_EA_101
+    BRA CODE0011_fail   should be inaccessible
+MOVEAW_EA_110
+    BRA CODE0011_fail   should be inaccessible
+MOVEAW_EA_111
+    MOVE.B  bits0to2, D1
+    CMP.B   #0, D1
+    BEQ MOVEAW_111_W
+    CMP.B   #1, D1
+    BEQ MOVEAW_111_L
+    CMP.B   #4, D1
+    BEQ MOVEAW_111_I
+    BRA CODE0011_fail   should be inaccessible
+MOVEAW_111_W
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+MOVEAW_111_L
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+MOVEAW_111_I
+    JSR print_hashtag
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
     RTS
     
 CODE0011_fail
@@ -3282,6 +3389,18 @@ print_ADD
     LEA printADD, A1
     TRAP    #15
     RTS
+    
+print_MOVEA
+    MOVE.B  #14, D0
+    LEA printMOVEA, A1
+    TRAP    #15
+    RTS
+    
+print_MOVEM
+    MOVE.B  #14, D0
+    LEA printMOVEM, A1
+    TRAP    #15
+    RTS
 
 *print data if cannot decode
 print_data
@@ -3553,6 +3672,8 @@ printOR DC.B    'OR',0
 printAND    DC.B    'AND',0
 printSUB    DC.B    'SUB',0
 printADD    DC.B    'ADD',0
+printMOVEA  DC.B    'MOVEA',0
+printMOVEM  DC.B    'MOVEM',0
 printS  DC.B    '.S ',0
 printB  DC.B     '.B ',0
 printW  DC.B    '.W ',0
