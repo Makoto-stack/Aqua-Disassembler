@@ -1323,7 +1323,7 @@ MOVEM_rm_001
 MOVEM_rm_010
     JSR MOVEM_and_size
     JSR increment_by_word
-    JSR MOVEM_rm_list
+    JSR MOVEM_mr_list
     JSR print_comma
     JSR print_open_paren
     JSR print_A
@@ -1360,7 +1360,7 @@ MOVEM_rm_111
 MOVEM_rm_111_W
     JSR MOVEM_and_size
     JSR increment_by_word
-    JSR MOVEM_rm_list
+    JSR MOVEM_mr_list
     JSR print_comma
     JSR print_$
     JSR increment_by_word
@@ -1369,7 +1369,7 @@ MOVEM_rm_111_W
 MOVEM_rm_111_L
     JSR MOVEM_and_size
     JSR increment_by_word
-    JSR MOVEM_rm_list
+    JSR MOVEM_mr_list
     JSR print_comma
     JSR print_$
     JSR increment_by_word
@@ -1405,6 +1405,7 @@ MOVEM_mr_010
     JSR print_char_of_D1
     JSR print_close_paren
     JSR print_comma
+    JSR increment_by_word
     JSR MOVEM_mr_list
     RTS
 MOVEM_mr_011
@@ -1417,6 +1418,7 @@ MOVEM_mr_011
     JSR print_close_paren
     JSR print_plus
     JSR print_comma
+    JSR increment_by_word
     JSR MOVEM_mr_list
     RTS
 MOVEM_mr_100
@@ -1536,8 +1538,82 @@ MOVEM_rm_finish
     RTS
 
 MOVEM_mr_list
-    JSR print_hashtag
-    JSR print_hashtag
+    MOVE.B  #7, D7
+    MOVE.B  #0, D6
+    MOVE.W  curr_four_nibbles, D2
+MOVEM_mr_A_loop
+    LSL.W   #1, D2
+    BCS MOVEM_mr_A_print
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_D_loop
+    BRA MOVEM_mr_A_loop
+MOVEM_mr_A_print
+    CMP.B   #0, D6
+    BEQ MOVEM_mr_A_first
+    BRA MOVEM_mr_A_next
+MOVEM_mr_A_first
+    MOVE.B  #1, D6
+    MOVE.B  #1, D5
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_D_loop
+    BRA MOVEM_mr_A_loop
+MOVEM_mr_A_next
+    JSR print_slash
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_D_loop
+    BRA MOVEM_mr_A_loop
+MOVEM_mr_D_loop
+    MOVE.B  #7, D7
+    MOVE.B  #0, D6
+MOVEM_mr_D_loop_2
+    LSL.W   #1, D2
+    BCS MOVEM_mr_D_print
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_finish
+    BRA MOVEM_mr_D_loop_2
+MOVEM_mr_D_print
+    CMP.B   #0, D6
+    BEQ MOVEM_mr_D_first
+    BRA MOVEM_mr_D_next
+MOVEM_mr_D_first
+    MOVE.B  #1, D6
+    CMP.B   #1, D5
+    BEQ MOVEM_D_slash
+    BRA MOVEM_mr_D_first_2
+MOVEM_D_slash
+    JSR print_slash
+MOVEM_mr_D_first_2
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_finish
+    BRA MOVEM_mr_D_loop_2
+MOVEM_mr_D_next
+    JSR print_slash
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_finish
+    BRA MOVEM_mr_D_loop_2
+MOVEM_mr_finish
     RTS
     
 MOVEM_and_size
