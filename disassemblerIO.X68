@@ -240,19 +240,19 @@ CODE0001
 MOVEB_dest_check
     MOVE.B  bits6to8, D1    check dest
     CMP.B   #1, D1
-    BEQ CODE0001_fail
+    BEQ EA_fail
     CMP.B   #5, D1
-    BEQ CODE0001_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0001_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEB_dest_abs_check
 MOVEB_source_check
     MOVE.B  bits3to5, D1    check source
     CMP.B   #5, D1
-    BEQ CODE0001_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0001_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEB_source_abs_check
     BRA MOVEB_valid
@@ -377,7 +377,7 @@ MOVEB_dest_000
     JSR print_char_of_D1
     RTS
 MOVEB_dest_001
-    BRA CODE0001_fail
+    BRA EA_fail
 MOVEB_dest_010
     JSR print_open_paren
     JSR print_A
@@ -438,17 +438,17 @@ MOVEL_dest_check
     CMP.B   #1, D1
     BEQ MOVEAL_check
     CMP.B   #5, D1
-    BEQ CODE0010_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0010_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEL_dest_abs_check
 MOVEL_source_check
     MOVE.B  bits3to5, D1    check source
     CMP.B   #5, D1
-    BEQ CODE0010_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0010_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEL_source_abs_check
     BRA MOVEL_valid
@@ -625,9 +625,9 @@ MOVEL_dest_111_L
 MOVEAL_check
     MOVE.B  bits3to5, D1    check source
     CMP.B   #5, D1
-    BEQ CODE0010_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0010_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEAL_abs_check
     BRA MOVEAL_valid
@@ -741,17 +741,17 @@ MOVEW_dest_check
     CMP.B   #1, D1
     BEQ MOVEAW_check
     CMP.B   #5, D1
-    BEQ CODE0011_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0011_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEW_dest_abs_check
 MOVEW_source_check
     MOVE.B  bits3to5, D1    check source
     CMP.B   #5, D1
-    BEQ CODE0011_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0011_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEW_source_abs_check
     BRA MOVEW_valid
@@ -928,9 +928,9 @@ MOVEW_dest_111_L
 MOVEAW_check
     MOVE.B  bits3to5, D1    check source
     CMP.B   #5, D1
-    BEQ CODE0011_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0011_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ MOVEAW_abs_check
     BRA MOVEAW_valid
@@ -1064,7 +1064,7 @@ LEA_check
     BEQ LEA_EA_010
     CMP.B   #7, D1
     BEQ LEA_EA_111
-    JSR print_data
+    JSR EA_fail
     RTS
 LEA_EA_010
     JSR print_LEA
@@ -1119,11 +1119,11 @@ NOT_check
     BNE     JSR_check
     MOVE.B  bits3to5, D1
     CMP.B   #1, D1
-    BEQ NOT_absolute_fail
+    BEQ EA_fail
     CMP.B   #5, D1
-    BEQ NOT_absolute_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ NOT_absolute_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ NOT_absolute_check
     BRA NOT_check_2
@@ -1180,7 +1180,7 @@ NOT_EA_000
     JSR print_char_of_D1
     RTS
 NOT_EA_001
-    JSR print_data
+    JSR EA_fail
     RTS
 NOT_EA_010
     JSR print_open_paren
@@ -1199,10 +1199,10 @@ NOT_EA_100
     JSR NOT_EA_010
     RTS
 NOT_EA_101
-    JSR print_data
+    JSR EA_fail
     RTS
 NOT_EA_110
-    JSR print_data
+    JSR EA_fail
     RTS
 NOT_EA_111
     MOVE.B  bits0to2, D1
@@ -1227,7 +1227,7 @@ JSR_check
     JSR load_bit_triples
     LSR.W    #6,D1
     CMP.W   #$013A,D1
-    BNE MOVEM_check *will change to BNE MOVEM_check at some point, MOVEM will branch to CODE0100_fail
+    BNE MOVEM_check
     MOVE.B  bits3to5, D1
     CMP.B   #7, D1
     BEQ JSR_absolute_check
@@ -1238,7 +1238,7 @@ JSR_absolute_check
     BGT JSR_absolute_fail
     BRA JSR_check_2
 JSR_absolute_fail
-    JSR print_data
+    JSR EA_fail
     RTS
 JSR_check_2
     MOVE.B  bits3to5, D1
@@ -1246,7 +1246,7 @@ JSR_check_2
     BEQ JSR_EA_010
     CMP.B   #7, D1
     BEQ JSR_EA_111
-    JSR print_data
+    JSR EA_fail
     RTS
 JSR_EA_010
     JSR print_JSR
@@ -1317,9 +1317,9 @@ MOVEM_rm_table
     JMP MOVEM_rm_110
     JMP MOVEM_rm_111
 MOVEM_rm_000
-    BRA code0100_fail
+    BRA EA_fail
 MOVEM_rm_001
-    BRA code0100_fail
+    BRA EA_fail
 MOVEM_rm_010
     JSR MOVEM_and_size
     JSR increment_by_word
@@ -1333,7 +1333,7 @@ MOVEM_rm_010
     JSR print_close_paren
     RTS
 MOVEM_rm_011
-    BRA code0100_fail
+    BRA EA_fail
 MOVEM_rm_100
     JSR MOVEM_and_size
     JSR increment_by_word
@@ -1348,9 +1348,9 @@ MOVEM_rm_100
     JSR print_close_paren
     RTS
 MOVEM_rm_101
-    BRA code0100_fail
+    BRA EA_fail
 MOVEM_rm_110
-    BRA code0100_fail
+    BRA EA_fail
 MOVEM_rm_111
     MOVE.B  bits0to2, D0
     CMP.B   #1, D0
@@ -1393,9 +1393,9 @@ MOVEM_mr_table
     JMP MOVEM_mr_110
     JMP MOVEM_mr_111
 MOVEM_mr_000
-    BRA CODE0100_fail
+    BRA EA_fail
 MOVEM_mr_001
-    BRA CODE0100_fail
+    BRA EA_fail
 MOVEM_mr_010
     JSR MOVEM_and_size
     JSR print_open_paren
@@ -1422,11 +1422,11 @@ MOVEM_mr_011
     JSR MOVEM_mr_list
     RTS
 MOVEM_mr_100
-    BRA CODE0100_fail
+    BRA EA_fail
 MOVEM_mr_101
-    BRA CODE0100_fail
+    BRA EA_fail
 MOVEM_mr_110
-    BRA CODE0100_fail
+    BRA EA_fail
 MOVEM_mr_111
     MOVE.B  bits0to2, D0
     CMP.B   #1, D0
@@ -1648,9 +1648,9 @@ ADDQ_check
     MOVE.B  D1, op_size
     MOVE.B  bits3to5, D1    check supported EA
     CMP.B   #5, D1
-    BEQ CODE0101_fail
+    BEQ EA_fail
     CMP.B   #6, D1
-    BEQ CODE0101_fail
+    BEQ EA_fail
     CMP.B   #7, D1
     BEQ ADDQ_absolute_check if absolute mode, make sure valid
     BRA ADDQ_check_2    
@@ -2101,7 +2101,7 @@ OR_Dn_EA_reuse
     JSR print_char_of_D1
     RTS
 OR_Dn_EA_001
-    BRA CODE1000_fail
+    BRA EA_fail
 OR_Dn_EA_010
     JSR OR_and_size
     JSR print_open_paren
@@ -2132,9 +2132,9 @@ OR_Dn_EA_100
     JSR print_close_paren
     BRA OR_Dn_EA_reuse
 OR_Dn_EA_101
-    BRA CODE1000_fail
+    BRA EA_fail
 OR_Dn_EA_110
-    BRA CODE1000_fail
+    BRA EA_fail
 OR_Dn_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -2215,9 +2215,9 @@ OR_EA_EA_table
     JMP OR_EA_EA_110
     JMP OR_EA_EA_111
 OR_EA_EA_000
-    BRA CODE1000_fail
+    BRA EA_fail
 OR_EA_EA_001
-    BRA CODE1000_fail
+    BRA EA_fail
 OR_EA_EA_010
     JSR OR_and_size
     JSR print_D
@@ -2263,9 +2263,9 @@ OR_EA_EA_100
     JSR print_close_paren
     RTS
 OR_EA_EA_101
-    BRA CODE1000_fail
+    BRA EA_fail
 OR_EA_EA_110
-    BRA CODE1000_fail
+    BRA EA_fail
 OR_EA_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -2405,9 +2405,9 @@ SUB_Dn_EA_100
     JSR print_close_paren
     BRA SUB_Dn_EA_reuse
 SUB_Dn_EA_101
-    BRA CODE1001_fail
+    BRA EA_fail
 SUB_Dn_EA_110
-    BRA CODE1001_fail
+    BRA EA_fail
 SUB_Dn_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -2488,9 +2488,9 @@ SUB_EA_EA_table
     JMP SUB_EA_EA_110
     JMP SUB_EA_EA_111
 SUB_EA_EA_000
-    BRA CODE1001_fail
+    BRA EA_fail
 SUB_EA_EA_001
-    BRA CODE1001_fail
+    BRA EA_fail
 SUB_EA_EA_010
     JSR SUB_and_size
     JSR print_D
@@ -2536,9 +2536,9 @@ SUB_EA_EA_100
     JSR print_close_paren
     RTS
 SUB_EA_EA_101
-    BRA CODE1001_fail
+    BRA EA_fail
 SUB_EA_EA_110
-    BRA CODE1001_fail
+    BRA EA_fail
 SUB_EA_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -2649,7 +2649,7 @@ AND_Dn_EA_reuse
     JSR print_char_of_D1
     RTS
 AND_Dn_EA_001
-    BRA CODE1100_fail
+    BRA EA_fail
 AND_Dn_EA_010
     JSR AND_and_size
     JSR print_open_paren
@@ -2680,9 +2680,9 @@ AND_Dn_EA_100
     JSR print_close_paren
     BRA AND_Dn_EA_reuse
 AND_Dn_EA_101
-    BRA CODE1100_fail
+    BRA EA_fail
 AND_Dn_EA_110
-    BRA CODE1100_fail
+    BRA EA_fail
 AND_Dn_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -2763,9 +2763,9 @@ AND_EA_EA_table
     JMP AND_EA_EA_110
     JMP AND_EA_EA_111
 AND_EA_EA_000
-    BRA CODE1100_fail
+    BRA EA_fail
 AND_EA_EA_001
-    BRA CODE1100_fail
+    BRA EA_fail
 AND_EA_EA_010
     JSR AND_and_size
     JSR print_D
@@ -2811,9 +2811,9 @@ AND_EA_EA_100
     JSR print_close_paren
     RTS
 AND_EA_EA_101
-    BRA CODE1100_fail
+    BRA EA_fail
 AND_EA_EA_110
-    BRA CODE1100_fail
+    BRA EA_fail
 AND_EA_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -2949,9 +2949,9 @@ ADDA_EA_100
     JSR ADDA_reuse
     RTS
 ADDA_EA_101
-    BRA CODE1101_fail
+    BRA EA_fail
 ADDA_EA_110
-    BRA CODE1101_fail
+    BRA EA_fail
 ADDA_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -3109,9 +3109,9 @@ ADD_Dn_EA_100
     JSR print_close_paren
     BRA ADD_Dn_EA_reuse
 ADD_Dn_EA_101
-    BRA CODE1101_fail
+    BRA EA_fail
 ADD_Dn_EA_110
-    BRA CODE1101_fail
+    BRA EA_fail
 ADD_Dn_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -3192,9 +3192,9 @@ ADD_EA_EA_table
     JMP ADD_EA_EA_110
     JMP ADD_EA_EA_111
 ADD_EA_EA_000
-    BRA CODE1101_fail
+    BRA EA_fail
 ADD_EA_EA_001
-    BRA CODE1101_fail
+    BRA EA_fail
 ADD_EA_EA_010
     JSR ADD_and_size
     JSR print_D
@@ -3240,9 +3240,9 @@ ADD_EA_EA_100
     JSR print_close_paren
     RTS
 ADD_EA_EA_101
-    BRA CODE1101_fail
+    BRA EA_fail
 ADD_EA_EA_110
-    BRA CODE1101_fail
+    BRA EA_fail
 ADD_EA_EA_111
     MOVE.B  bits0to2, D1
     CMP.B   #0, D1
@@ -3615,6 +3615,10 @@ RO_memory_111_L
 *not supported
 CODE1111
     JSR print_data
+    RTS
+    
+EA_fail
+    JSR print_invalid_EA
     RTS
 
 
@@ -4051,6 +4055,12 @@ print_slash
     TRAP    #15
     RTS
     
+print_invalid_EA
+    LEA printInvalidEA, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
 ***
 *end of printing subroutines
 ***
@@ -4128,6 +4138,7 @@ input   EQU $500
 
 * Put variables and constants here
 *****OPCODE_STRING*****
+printInvalidEA   DC.B    'Invalid EA',0
 printJSR    DC.B    'JSR ',0
 printNOT    DC.B    'NOT',0
 printLEA    DC.B    'LEA ',0
