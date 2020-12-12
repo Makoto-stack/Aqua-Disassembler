@@ -1289,12 +1289,12 @@ MOVEM_check
     LSR.W   #7, D0
     CMP.B   #1, D0
     BNE CODE0100_fail
+    MOVE.B  bits6to8, D0
+    ANDI.B  #1, D0
+    MOVE.B  D0, op_size
     MOVE.B  bits9to11, D0
     ANDI.B  #2, D0
     LSR.B   #1, D0
-    MOVE.B  D0, op_size
-    MOVE.B  bits6to8, D0
-    ANDI.B  #1, D0
     MOVE.B  D0, dr
     CMP.B   #0, D0
     BEQ MOVEM_rm_check
@@ -1457,9 +1457,84 @@ MOVEM_mr_111_L
     RTS
     
 MOVEM_rm_list
-    JSR print_hashtag
-    JSR print_hashtag
+    MOVE.B  #0, D7
+    MOVE.B  #0, D6
+    MOVE.W  curr_four_nibbles, D2
+MOVEM_rm_D_loop
+    LSL.W   #1, D2
+    BCS MOVEM_rm_D_print
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_A_loop
+    BRA MOVEM_rm_D_loop
+MOVEM_rm_D_print
+    CMP.B   #0, D6
+    BEQ MOVEM_rm_D_first
+    BRA MOVEM_rm_D_next
+MOVEM_rm_D_first
+    MOVE.B  #1, D6
+    MOVE.B  #1, D5
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_A_loop
+    BRA MOVEM_rm_D_loop
+MOVEM_rm_D_next
+    JSR print_slash
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_A_loop
+    BRA MOVEM_rm_D_loop
+MOVEM_rm_A_loop
+    MOVE.B  #0, D7
+    MOVE.B  #0, D6
+MOVEM_rm_A_loop_2
+    LSL.W   #1, D2
+    BCS MOVEM_rm_A_print
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_finish
+    BRA MOVEM_rm_A_loop_2
+MOVEM_rm_A_print
+    CMP.B   #0, D6
+    BEQ MOVEM_rm_A_first
+    BRA MOVEM_rm_A_next
+MOVEM_rm_A_first
+    MOVE.B  #1, D6
+    CMP.B   #1, D5
+    BEQ MOVEM_A_slash
+    BRA MOVEM_rm_A_first_2
+MOVEM_A_slash
+    JSR print_slash
+MOVEM_rm_A_first_2
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_finish
+    BRA MOVEM_rm_A_loop_2
+MOVEM_rm_A_next
+    JSR print_slash
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_finish
+    BRA MOVEM_rm_A_loop_2
+MOVEM_rm_finish
     RTS
+
 MOVEM_mr_list
     JSR print_hashtag
     JSR print_hashtag
@@ -3894,6 +3969,12 @@ print_L
     TRAP    #15
     RTS
     
+print_slash
+    LEA printSlash, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
 ***
 *end of printing subroutines
 ***
@@ -3999,6 +4080,7 @@ printPlus   DC.B     '+',0
 printComma  DC.B    ',',0
 printOpenParen   DC.B     '(',0
 printCloseParen   DC.B     ')',0
+printSlash  DC.B    '/',0
 printD  DC.B     'D',0
 printA    DC.B    'A',0
 print0  DC.B    '0',0
@@ -4048,4 +4130,5 @@ newLine DC.B    '',0 use with trap task 13
 printSpace  DC.B    ' ',0 use with trap task 14
 
     END    START
+
 
