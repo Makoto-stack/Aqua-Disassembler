@@ -181,7 +181,15 @@ finish_disassembly
 *subroutine to increment curr_loc
 increment_by_word
     MOVE.L  curr_loc, D0
-    ADDI.W   #$2, D0
+    ADDI.L   #$2, D0
+    MOVE.L  D0, curr_loc
+    JSR refresh_nibbles
+    RTS
+    
+*subroutine to decrement curr_loc
+decrement_by_word
+    MOVE.L  curr_loc, D0
+    SUBI.L  #$2, D0
     MOVE.L  D0, curr_loc
     JSR refresh_nibbles
     RTS
@@ -1219,7 +1227,7 @@ JSR_check
     JSR load_bit_triples
     LSR.W    #6,D1
     CMP.W   #$013A,D1
-    BNE CODE0100_fail *will change to BNE MOVEM_check at some point, MOVEM will branch to CODE0100_fail
+    BNE MOVEM_check *will change to BNE MOVEM_check at some point, MOVEM will branch to CODE0100_fail
     MOVE.B  bits3to5, D1
     CMP.B   #7, D1
     BEQ JSR_absolute_check
@@ -1267,6 +1275,358 @@ JSR_EA_111_L
     JSR print_$
     JSR increment_by_word
     JSR print_longword_of_data
+    RTS
+    
+MOVEM_check
+    JSR load_bit_triples
+    MOVE.W  curr_four_nibbles, D0
+    LSR.W   #8, D0
+    LSR.W   #3, D0
+    CMP.B   #9, D0
+    BNE CODE0100_fail
+    MOVE.W  curr_four_nibbles, D0
+    ANDI.W  #$0380, D0
+    LSR.W   #7, D0
+    CMP.B   #1, D0
+    BNE CODE0100_fail
+    MOVE.B  bits6to8, D0
+    ANDI.B  #1, D0
+    MOVE.B  D0, op_size
+    MOVE.B  bits9to11, D0
+    ANDI.B  #2, D0
+    LSR.B   #1, D0
+    MOVE.B  D0, dr
+    CMP.B   #0, D0
+    BEQ MOVEM_rm_check
+    BRA MOVEM_mr_check
+    
+MOVEM_rm_check
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEM_rm_table, A2
+    JSR 0(A2, D1)
+    RTS
+MOVEM_rm_table
+    JMP MOVEM_rm_000
+    JMP MOVEM_rm_001
+    JMP MOVEM_rm_010
+    JMP MOVEM_rm_011
+    JMP MOVEM_rm_100
+    JMP MOVEM_rm_101
+    JMP MOVEM_rm_110
+    JMP MOVEM_rm_111
+MOVEM_rm_000
+    BRA code0100_fail
+MOVEM_rm_001
+    BRA code0100_fail
+MOVEM_rm_010
+    JSR MOVEM_and_size
+    JSR increment_by_word
+    JSR MOVEM_mr_list
+    JSR print_comma
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEM_rm_011
+    BRA code0100_fail
+MOVEM_rm_100
+    JSR MOVEM_and_size
+    JSR increment_by_word
+    JSR MOVEM_rm_list
+    JSR print_comma
+    JSR print_minus
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    RTS
+MOVEM_rm_101
+    BRA code0100_fail
+MOVEM_rm_110
+    BRA code0100_fail
+MOVEM_rm_111
+    MOVE.B  bits0to2, D0
+    CMP.B   #1, D0
+    BGT code0100_fail
+    BLT MOVEM_rm_111_W
+    BRA MOVEM_rm_111_L
+MOVEM_rm_111_W
+    JSR MOVEM_and_size
+    JSR increment_by_word
+    JSR MOVEM_mr_list
+    JSR print_comma
+    JSR print_$
+    JSR increment_by_word
+    JSR print_word_of_data
+    RTS
+MOVEM_rm_111_L
+    JSR MOVEM_and_size
+    JSR increment_by_word
+    JSR MOVEM_mr_list
+    JSR print_comma
+    JSR print_$
+    JSR increment_by_word
+    JSR print_longword_of_data
+    RTS
+
+MOVEM_mr_check
+    MOVE.B  bits3to5, D1
+    ANDI.L  #%111, D1
+    MULU    #6, D1
+    LEA MOVEM_mr_table, A2
+    JSR 0(A2, D1)
+    RTS
+MOVEM_mr_table
+    JMP MOVEM_mr_000
+    JMP MOVEM_mr_001
+    JMP MOVEM_mr_010
+    JMP MOVEM_mr_011
+    JMP MOVEM_mr_100
+    JMP MOVEM_mr_101
+    JMP MOVEM_mr_110
+    JMP MOVEM_mr_111
+MOVEM_mr_000
+    BRA CODE0100_fail
+MOVEM_mr_001
+    BRA CODE0100_fail
+MOVEM_mr_010
+    JSR MOVEM_and_size
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_comma
+    JSR increment_by_word
+    JSR MOVEM_mr_list
+    RTS
+MOVEM_mr_011
+    JSR MOVEM_and_size
+    JSR print_open_paren
+    JSR print_A
+    MOVE.B  bits0to2, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    JSR print_close_paren
+    JSR print_plus
+    JSR print_comma
+    JSR increment_by_word
+    JSR MOVEM_mr_list
+    RTS
+MOVEM_mr_100
+    BRA CODE0100_fail
+MOVEM_mr_101
+    BRA CODE0100_fail
+MOVEM_mr_110
+    BRA CODE0100_fail
+MOVEM_mr_111
+    MOVE.B  bits0to2, D0
+    CMP.B   #1, D0
+    BGT code0100_fail
+    BLT MOVEM_mr_111_W
+    BRA MOVEM_mr_111_L
+MOVEM_mr_111_W
+    JSR MOVEM_and_size
+    JSR print_$
+    JSR increment_by_word
+    JSR increment_by_word
+    JSR print_word_of_data
+    JSR print_comma
+    JSR decrement_by_word
+    JSR MOVEM_mr_list
+    JSR increment_by_word
+    RTS
+MOVEM_mr_111_L
+    JSR MOVEM_and_size
+    JSR print_$
+    JSR increment_by_word
+    JSR increment_by_word
+    JSR print_longword_of_data
+    JSR print_comma
+    JSR decrement_by_word
+    JSR decrement_by_word
+    JSR MOVEM_mr_list
+    JSR increment_by_word
+    JSR increment_by_word
+    RTS
+    
+MOVEM_rm_list
+    MOVE.B  #0, D7
+    MOVE.B  #0, D6
+    MOVE.W  curr_four_nibbles, D2
+MOVEM_rm_D_loop
+    LSL.W   #1, D2
+    BCS MOVEM_rm_D_print
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_A_loop
+    BRA MOVEM_rm_D_loop
+MOVEM_rm_D_print
+    CMP.B   #0, D6
+    BEQ MOVEM_rm_D_first
+    BRA MOVEM_rm_D_next
+MOVEM_rm_D_first
+    MOVE.B  #1, D6
+    MOVE.B  #1, D5
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_A_loop
+    BRA MOVEM_rm_D_loop
+MOVEM_rm_D_next
+    JSR print_slash
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_A_loop
+    BRA MOVEM_rm_D_loop
+MOVEM_rm_A_loop
+    MOVE.B  #0, D7
+    MOVE.B  #0, D6
+MOVEM_rm_A_loop_2
+    LSL.W   #1, D2
+    BCS MOVEM_rm_A_print
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_finish
+    BRA MOVEM_rm_A_loop_2
+MOVEM_rm_A_print
+    CMP.B   #0, D6
+    BEQ MOVEM_rm_A_first
+    BRA MOVEM_rm_A_next
+MOVEM_rm_A_first
+    MOVE.B  #1, D6
+    CMP.B   #1, D5
+    BEQ MOVEM_A_slash
+    BRA MOVEM_rm_A_first_2
+MOVEM_A_slash
+    JSR print_slash
+MOVEM_rm_A_first_2
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_finish
+    BRA MOVEM_rm_A_loop_2
+MOVEM_rm_A_next
+    JSR print_slash
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    ADDI.B  #1, D7
+    CMP.B   #8, D7
+    BEQ MOVEM_rm_finish
+    BRA MOVEM_rm_A_loop_2
+MOVEM_rm_finish
+    RTS
+
+MOVEM_mr_list
+    MOVE.B  #7, D7
+    MOVE.B  #0, D6
+    MOVE.W  curr_four_nibbles, D2
+MOVEM_mr_A_loop
+    LSL.W   #1, D2
+    BCS MOVEM_mr_A_print
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_D_loop
+    BRA MOVEM_mr_A_loop
+MOVEM_mr_A_print
+    CMP.B   #0, D6
+    BEQ MOVEM_mr_A_first
+    BRA MOVEM_mr_A_next
+MOVEM_mr_A_first
+    MOVE.B  #1, D6
+    MOVE.B  #1, D5
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_D_loop
+    BRA MOVEM_mr_A_loop
+MOVEM_mr_A_next
+    JSR print_slash
+    JSR print_A
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_D_loop
+    BRA MOVEM_mr_A_loop
+MOVEM_mr_D_loop
+    MOVE.B  #7, D7
+    MOVE.B  #0, D6
+MOVEM_mr_D_loop_2
+    LSL.W   #1, D2
+    BCS MOVEM_mr_D_print
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_finish
+    BRA MOVEM_mr_D_loop_2
+MOVEM_mr_D_print
+    CMP.B   #0, D6
+    BEQ MOVEM_mr_D_first
+    BRA MOVEM_mr_D_next
+MOVEM_mr_D_first
+    MOVE.B  #1, D6
+    CMP.B   #1, D5
+    BEQ MOVEM_D_slash
+    BRA MOVEM_mr_D_first_2
+MOVEM_D_slash
+    JSR print_slash
+MOVEM_mr_D_first_2
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_finish
+    BRA MOVEM_mr_D_loop_2
+MOVEM_mr_D_next
+    JSR print_slash
+    JSR print_D
+    MOVE.B  D7, D1
+    JSR hex_to_ascii
+    JSR print_char_of_D1
+    SUBI.B  #1, D7
+    CMP.B   #$FF, D7
+    BEQ MOVEM_mr_finish
+    BRA MOVEM_mr_D_loop_2
+MOVEM_mr_finish
+    RTS
+    
+MOVEM_and_size
+    JSR print_MOVEM
+    MOVE.B  op_size, D0
+    CMP.B   #0, D0
+    BEQ MOVEM_W
+    BRA MOVEM_L
+MOVEM_W
+    JSR print_W
+    RTS
+MOVEM_L
+    JSR print_L
     RTS
     
 CODE0100_fail
@@ -3685,6 +4045,12 @@ print_L
     TRAP    #15
     RTS
     
+print_slash
+    LEA printSlash, A1
+    MOVE.B  #14, D0
+    TRAP    #15
+    RTS
+    
 ***
 *end of printing subroutines
 ***
@@ -3790,6 +4156,7 @@ printPlus   DC.B     '+',0
 printComma  DC.B    ',',0
 printOpenParen   DC.B     '(',0
 printCloseParen   DC.B     ')',0
+printSlash  DC.B    '/',0
 printD  DC.B     'D',0
 printA    DC.B    'A',0
 print0  DC.B    '0',0
